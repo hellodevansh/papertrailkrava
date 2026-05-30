@@ -42,6 +42,14 @@ type Status = {
     durable: boolean;
     note?: string;
   };
+  redis?: {
+    ok: boolean;
+    configured?: boolean;
+    documentCount?: number;
+    factCount?: number;
+    error?: string;
+    envVars?: Record<string, boolean>;
+  };
   state: PaperTrailState;
 };
 
@@ -159,6 +167,8 @@ type Answer = {
   sources: string[];
   privateFactsAccessed: string[];
   warning?: string;
+  documentCount?: number;
+  hint?: string;
 };
 
 const emptyState: PaperTrailState = {
@@ -174,6 +184,31 @@ const emptyState: PaperTrailState = {
   linqActivities: [],
   updatedAt: null,
 };
+
+const LOCAL_STATE_KEY = "papertrail-state-v1";
+
+function loadLocalState(): PaperTrailState | null {
+  try {
+    const raw = localStorage.getItem(LOCAL_STATE_KEY);
+    if (!raw) return null;
+    return { ...emptyState, ...JSON.parse(raw) };
+  } catch {
+    return null;
+  }
+}
+
+function saveLocalState(snapshot: PaperTrailState) {
+  try {
+    if (!snapshot.documents.length && !snapshot.facts.length) return;
+    localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(snapshot));
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+function richerState(a: PaperTrailState, b: PaperTrailState) {
+  return a.documents.length >= b.documents.length ? a : b;
+}
 
 const sampleDocs = [
   {
@@ -251,7 +286,7 @@ function shortDate(value: string) {
 
 function App() {
   const [status, setStatus] = useState<Status | null>(null);
-  const [state, setState] = useState<PaperTrailState>(emptyState);
+  const [state, setState] = useState<PaperTrailState>(() => loadLocalState() || emptyState);
   const [pasteName, setPasteName] = useState("Pasted document");
   const [pasteText, setPasteText] = useState("");
   const [question, setQuestion] = useState("What subscriptions am I paying for?");
@@ -271,10 +306,22 @@ function App() {
     (activity) => activity.direction === "outbound" && activity.status === "delivered",
   );
 
+  const applyState = (next: PaperTrailState) => {
+    saveLocalState(next);
+    setState(next);
+  };
+
   const loadStatus = async () => {
     const next = await api<Status>("/api/status");
     setStatus(next);
-    setState(next.state || emptyState);
+    const server = next.state || emptyState;
+    const local = loadLocalState();
+    setState((prev) => {
+      let best = richerState(prev, server);
+      if (local) best = richerState(best, local);
+      if (best !== prev) saveLocalState(best);
+      return best;
+    });
   };
 
   useEffect(() => {
@@ -284,6 +331,10 @@ function App() {
     }, 4000);
     return () => window.clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (state.documents.length || state.facts.length) saveLocalState(state);
+  }, [state]);
 
   const totals = useMemo(
     () => [
@@ -295,17 +346,45 @@ function App() {
     [state],
   );
 
+  const syncStateToServer = async (snapshot: PaperTrailState) => {
+    try {
+      const result = await api<{ state: PaperTrailState; persist?: { ok: boolean; error?: string } }>("/api/state", {
+        method: "POST",
+        body: JSON.stringify({ state: snapshot }),
+      });
+      if (result.state?.documents?.length) applyState(result.state);
+      if (result.persist && !result.persist.ok) {
+        setError(`Redis sync issue: ${result.persist.error}. Data is kept in this browser.`);
+      }
+    } catch {
+      // Browser backup still holds the snapshot.
+    }
+  };
+
   const extractDocument = async (payload: { id?: string; name: string; text?: string; mimeType?: string; dataBase64?: string }) => {
     setBusy(`Extracting ${payload.name}`);
     setError(null);
     try {
-      const result = await api<{ state: PaperTrailState; warning?: string }>("/api/documents/extract", {
+      const result = await api<{
+        state: PaperTrailState;
+        warning?: string;
+        persist?: { ok: boolean; error?: string };
+        reader?: { provider: string; warning?: string };
+      }>("/api/documents/extract", {
         method: "POST",
         body: JSON.stringify(payload),
       });
-      setState(result.state);
-      if (result.warning) setError(result.warning);
-      await loadStatus();
+      if (!result.state?.documents?.length) {
+        setError("Extraction finished but no document was saved. Check Krava/Gemini keys on Vercel.");
+        return;
+      }
+      applyState(result.state);
+      await syncStateToServer(result.state);
+      if (result.persist && !result.persist.ok) {
+        setError(`Extracted locally; Redis: ${result.persist.error}`);
+      } else if (result.warning || result.reader?.warning) {
+        setError(result.warning || result.reader?.warning || null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Extraction failed");
     } finally {
@@ -337,14 +416,21 @@ function App() {
   };
 
   const ask = async (query = question) => {
+    if (!state.documents.length) {
+      setError("Upload or load a document first, then ask a question.");
+      return;
+    }
     setBusy("Asking PaperTrail");
     setError(null);
     try {
       const result = await api<Answer>("/api/krava/ask", {
         method: "POST",
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query, state }),
       });
       setAnswer(result);
+      if (result.hint === "no_documents" || result.documentCount === 0) {
+        setError("No extracted documents in memory. Upload or paste a doc and wait for the inbox to update.");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Question failed");
     } finally {
@@ -359,7 +445,7 @@ function App() {
         method: "POST",
         body: JSON.stringify({ kind: "approval" }),
       });
-      setState(result.state);
+      applyState(result.state);
       await loadStatus();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Linq send failed");
@@ -407,6 +493,15 @@ function App() {
         <div className="demoNotice">
           <CircleAlert size={18} />
           <span>Add KRAVA_APP_KEY for live extraction and Q&A. Gemini is only used to read image/PDF files before Krava reasons over the text.</span>
+        </div>
+      )}
+
+      {status?.storage?.durable === false && (
+        <div className="linqDemoBanner">
+          <CircleAlert size={18} />
+          <span>
+            <strong>Free mode (no Redis):</strong> documents stay in this browser and are sent with each question. Refresh keeps data here; other devices won&apos;t see it.
+          </span>
         </div>
       )}
 
@@ -515,6 +610,7 @@ function App() {
                   <p>{answer.answer}</p>
                   <div className="audit">
                     <span>Provider: {answer.provider}</span>
+                    <span>Docs in memory: {answer.documentCount ?? state.documents.length}</span>
                     <span>Sources: {answer.sources?.join(", ") || "local private index"}</span>
                     <span>Private facts: {answer.privateFactsAccessed?.slice(0, 4).join(", ") || "none"}</span>
                   </div>
@@ -616,7 +712,14 @@ function App() {
             <div className="systemList">
               <span>Last sync: {state.updatedAt ? new Date(state.updatedAt).toLocaleTimeString() : "waiting"}</span>
               <span>Krava: {status?.krava.message || status?.krava.mode || "checking"}</span>
-              <span>Storage: {status?.storage?.mode || "checking"}{status?.storage?.durable === false ? " (add Redis on Vercel)" : ""}</span>
+              <span>
+                Storage: {status?.storage?.durable ? status.storage.mode : "browser (free)"}
+                {status?.storage?.durable === false ? " · docs saved in this browser" : ""}
+              </span>
+              <span>
+                Redis: {status?.redis?.ok ? `ok (${status.redis.documentCount ?? 0} docs on server)` : status?.redis?.configured === false ? "not connected to project" : status?.redis?.error || "checking"}
+              </span>
+              <span>Docs loaded: {state.documents.length} · Facts: {state.facts.length}</span>
               {busy && <span>Working: {busy}</span>}
               {error && <span className="errorText">{error}</span>}
             </div>

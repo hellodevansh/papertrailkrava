@@ -1,6 +1,6 @@
 import { createKravaClient, createKravaPlatformClient } from "@kravalabs/api-client";
 import { loadEnv } from "./env.js";
-import { getState, searchLocalMemory } from "./store.js";
+import { getState, pickStateForAsk, searchLocalMemory } from "./store.js";
 
 const externalUserId = "papertrail-demo-user";
 
@@ -230,8 +230,7 @@ export async function savePaperTrailMemories(extraction) {
   return { connected: true, saved, mode: "live" };
 }
 
-function localAnswer(query) {
-  const state = getState();
+function localAnswer(query, state) {
   const q = query.toLowerCase();
   const accessed = [];
 
@@ -267,7 +266,7 @@ function localAnswer(query) {
     };
   }
 
-  const matches = searchLocalMemory(query);
+  const matches = searchLocalMemory(query, state);
   accessed.push(...matches.slice(0, 6).map((item) => item.label || item.title || item.merchant || item.name || "memory"));
   return {
     answer: matches.length
@@ -277,27 +276,70 @@ function localAnswer(query) {
   };
 }
 
-export async function askPaperTrail(query) {
-  const local = localAnswer(query);
-  const state = getState();
-  const memories = searchLocalMemory(query);
+function buildAskContext(state, query) {
+  const memories = searchLocalMemory(query, state);
+  const fallbackRecords = [
+    ...state.facts,
+    ...state.deadlines,
+    ...state.subscriptions,
+    ...state.payments,
+    ...state.actionItems,
+    ...state.contacts,
+  ].slice(0, 16);
+
+  return {
+    documentCount: state.documents.length,
+    documents: state.documents.map((doc) => ({
+      name: doc.name,
+      type: doc.documentType,
+      summary: doc.summary,
+      uploadedAt: doc.uploadedAt,
+    })),
+    facts: state.facts.slice(0, 24),
+    deadlines: state.deadlines.slice(0, 12),
+    subscriptions: state.subscriptions.slice(0, 12),
+    payments: state.payments.slice(0, 12),
+    actionItems: state.actionItems.slice(0, 12),
+    relevantRecords: memories.length ? memories.slice(0, 16) : fallbackRecords,
+    urgent: [...state.deadlines, ...state.actionItems].slice(0, 8),
+  };
+}
+
+export async function askPaperTrail(query, clientState = null) {
+  const state = pickStateForAsk(getState(), clientState);
+  const memories = searchLocalMemory(query, state);
+  const sources = [...new Set(memories.map((item) => item.sourceDocument).filter(Boolean))];
+  const context = buildAskContext(state, query);
+  const usedClientState = Boolean(clientState?.documents?.length) && clientState.documents.length > (getState().documents?.length || 0);
+
+  if (!state.documents.length) {
+    return {
+      answer:
+        "I do not have any documents yet. Upload or paste a document, wait for extraction to finish (check the inbox and timeline), then ask again.",
+      provider: "papertrail",
+      sources: [],
+      privateFactsAccessed: [],
+      documentCount: 0,
+      hint: "no_documents",
+    };
+  }
+
+  const local = localAnswer(query, state);
   const userToken = await getUserToken().catch(() => null);
 
   if (!userToken) {
     return {
       ...local,
       provider: "local",
-      sources: [...new Set(memories.map((item) => item.sourceDocument).filter(Boolean))],
+      sources: sources.length ? sources : state.documents.map((d) => d.name),
       privateFactsAccessed: local.accessed,
+      documentCount: state.documents.length,
+      usedClientState,
     };
   }
 
   try {
-    const compactContext = JSON.stringify({
-      documents: state.documents.map((doc) => ({ name: doc.name, type: doc.documentType, summary: doc.summary })),
-      relevantRecords: memories.slice(0, 12),
-      urgent: [...state.deadlines, ...state.actionItems].slice(0, 8),
-    }).slice(0, 2300);
+    const compactContext = JSON.stringify(context).slice(0, 3800);
     const response = await fetch("https://krava.io/api/platform/chat", {
       method: "POST",
       headers: {
@@ -307,7 +349,7 @@ export async function askPaperTrail(query) {
       body: JSON.stringify({
         message: `Question: ${query}\n\nRelevant PaperTrail private context:\n${compactContext}`,
         system:
-          "You are PaperTrail, a concise private life-admin assistant. Answer only from the provided document memory. Include dates, amounts, and source document names when available. Mention if sensitive facts were accessed.",
+          "You are PaperTrail, a concise private life-admin assistant. Answer ONLY using the JSON context below (documents, facts, deadlines, subscriptions, payments, actionItems). If the answer is in the context, cite the source document name. If not in context, say what is missing. Do not invent facts.",
       }),
     });
 
@@ -321,8 +363,10 @@ export async function askPaperTrail(query) {
       return {
         answer,
         provider: "krava-platform-chat",
-        sources: [...new Set(memories.map((item) => item.sourceDocument).filter(Boolean))],
+        sources: sources.length ? sources : state.documents.map((d) => d.name),
         privateFactsAccessed: local.accessed,
+        documentCount: state.documents.length,
+        usedClientState,
       };
     }
   } catch {
@@ -352,16 +396,20 @@ export async function askPaperTrail(query) {
     return {
       answer,
       provider: "krava",
-      sources: [...new Set(memories.map((item) => item.sourceDocument).filter(Boolean))],
+      sources: sources.length ? sources : state.documents.map((d) => d.name),
       privateFactsAccessed: local.accessed,
+      documentCount: state.documents.length,
+      usedClientState,
     };
   } catch (error) {
     return {
       ...local,
       provider: "local-fallback",
       warning: error.message,
-      sources: [...new Set(memories.map((item) => item.sourceDocument).filter(Boolean))],
+      sources: sources.length ? sources : state.documents.map((d) => d.name),
       privateFactsAccessed: local.accessed,
+      documentCount: state.documents.length,
+      usedClientState,
     };
   }
 }

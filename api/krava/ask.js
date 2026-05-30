@@ -10,5 +10,5 @@ export default withStore(async function handler(req, res) {
     return;
   }
 
-  sendJson(res, 200, await askPaperTrail(body.query));
+  sendJson(res, 200, await askPaperTrail(body.query, body.state));
 });

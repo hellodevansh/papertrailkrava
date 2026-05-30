@@ -27,16 +27,35 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function redisEnvReady() {
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+function parseRedisValue(saved) {
+  if (!saved) return null;
+  if (typeof saved === "string") {
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return null;
+    }
+  }
+  if (typeof saved === "object") return saved;
+  return null;
+}
+
+export function redisEnvReady() {
+  const url =
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.KV_REST_API_URL ||
+    process.env.UPSTASH_REDIS_URL;
+  const token =
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.KV_REST_API_TOKEN ||
+    process.env.UPSTASH_REDIS_TOKEN;
   return Boolean(url && token);
 }
 
-async function getRedis() {
+export async function getRedis() {
   if (!redisEnvReady()) return null;
   const { Redis } = await import("@upstash/redis");
-  if (process.env.UPSTASH_REDIS_REST_URL) {
+  if (process.env.UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REDIS_URL) {
     return Redis.fromEnv();
   }
   return new Redis({
@@ -49,8 +68,8 @@ async function readKvState() {
   const redis = await getRedis();
   if (!redis) return null;
   try {
-    const saved = await redis.get(STORE_KEY);
-    if (!saved || typeof saved !== "object") return null;
+    const saved = parseRedisValue(await redis.get(STORE_KEY));
+    if (!saved) return null;
     return { ...clone(initialState), ...saved };
   } catch {
     return null;
@@ -59,12 +78,51 @@ async function readKvState() {
 
 async function writeKvState(state) {
   const redis = await getRedis();
-  if (!redis) return false;
+  if (!redis) return { ok: false, error: "Redis client not configured" };
   try {
-    await redis.set(STORE_KEY, clone(state));
-    return true;
-  } catch {
-    return false;
+    const payload = clone(state);
+    await redis.set(STORE_KEY, payload);
+    const check = parseRedisValue(await redis.get(STORE_KEY));
+    if (!check?.documents?.length && payload.documents?.length) {
+      return { ok: false, error: "Redis write verification failed" };
+    }
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Redis write failed" };
+  }
+}
+
+export async function checkRedisHealth() {
+  if (!redisEnvReady()) {
+    return {
+      ok: false,
+      configured: false,
+      envVars: {
+        UPSTASH_REDIS_REST_URL: Boolean(process.env.UPSTASH_REDIS_REST_URL),
+        UPSTASH_REDIS_REST_TOKEN: Boolean(process.env.UPSTASH_REDIS_REST_TOKEN),
+        KV_REST_API_URL: Boolean(process.env.KV_REST_API_URL),
+        KV_REST_API_TOKEN: Boolean(process.env.KV_REST_API_TOKEN),
+      },
+    };
+  }
+  try {
+    const redis = await getRedis();
+    if (!redis) return { ok: false, configured: true, error: "Could not create Redis client" };
+    const ping = typeof redis.ping === "function" ? await redis.ping() : "skip";
+    const saved = parseRedisValue(await redis.get(STORE_KEY));
+    return {
+      ok: true,
+      configured: true,
+      ping,
+      documentCount: saved?.documents?.length || 0,
+      factCount: saved?.facts?.length || 0,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      configured: true,
+      error: error instanceof Error ? error.message : "Redis health check failed",
+    };
   }
 }
 
@@ -85,15 +143,15 @@ function loadFromDisk() {
 }
 
 export async function ensureStore() {
+  if (redisEnvReady()) {
+    const kvState = await readKvState();
+    globalThis.__paperTrailState = kvState || clone(initialState);
+    return;
+  }
+
   if (!storeReady) {
     storeReady = (async () => {
       if (globalThis.__paperTrailState) return;
-
-      const kvState = await readKvState();
-      if (kvState) {
-        globalThis.__paperTrailState = kvState;
-        return;
-      }
 
       if (process.env.VERCEL) {
         globalThis.__paperTrailState = clone(initialState);
@@ -112,7 +170,7 @@ export function getStorageStatus() {
     return {
       mode: "ephemeral",
       durable: false,
-      note: "Add Upstash Redis from Vercel Marketplace (Storage) so uploads persist across serverless requests.",
+      note: "Connect Upstash to this Vercel project, then redeploy. Env vars: UPSTASH_REDIS_REST_URL + TOKEN or KV_REST_API_*",
     };
   }
   return { mode: "local-file", durable: true, path: ".papertrail-data/store.json" };
@@ -121,12 +179,17 @@ export function getStorageStatus() {
 async function persist(state) {
   state.updatedAt = new Date().toISOString();
 
-  if (await writeKvState(state)) return;
+  if (redisEnvReady()) {
+    return writeKvState(state);
+  }
 
-  if (process.env.VERCEL) return;
+  if (process.env.VERCEL) {
+    return { ok: false, error: "No Redis on Vercel — data only lives in this request" };
+  }
 
   mkdirSync(dirname(filePath), { recursive: true });
   writeFileSync(filePath, JSON.stringify(state, null, 2));
+  return { ok: true };
 }
 
 function withIds(items, document) {
@@ -140,6 +203,23 @@ function withIds(items, document) {
 
 export function getState() {
   return clone(getGlobalState());
+}
+
+export function pickStateForAsk(serverState, clientState) {
+  const serverDocs = serverState?.documents?.length || 0;
+  const clientDocs = clientState?.documents?.length || 0;
+  if (clientDocs > serverDocs) {
+    return { ...clone(initialState), ...clientState };
+  }
+  return serverState;
+}
+
+export async function saveFullState(incoming) {
+  await ensureStore();
+  const merged = { ...clone(initialState), ...incoming };
+  globalThis.__paperTrailState = merged;
+  const persistResult = await persist(merged);
+  return { state: getState(), persist: persistResult };
 }
 
 export async function resetState() {
@@ -183,8 +263,8 @@ export async function upsertExtraction(extraction, original = {}) {
     ...field,
   }));
 
-  await persist(state);
-  return getState();
+  const persistResult = await persist(state);
+  return { state: getState(), persist: persistResult };
 }
 
 export async function setLinqChatId(chatId) {
@@ -252,10 +332,17 @@ export async function applyConsentCommand(text) {
   return getState();
 }
 
-export function searchLocalMemory(query) {
-  const state = getGlobalState();
+export function searchLocalMemory(query, state = getGlobalState()) {
   const q = query.toLowerCase();
+  const words = q.split(/\s+/).filter((word) => word.length > 2);
+  const docRecords = state.documents.map((doc) => ({
+    label: doc.name,
+    value: doc.summary,
+    category: doc.documentType,
+    sourceDocument: doc.name,
+  }));
   const all = [
+    ...docRecords,
     ...state.facts,
     ...state.deadlines,
     ...state.subscriptions,
@@ -265,7 +352,13 @@ export function searchLocalMemory(query) {
     ...state.sensitiveFields,
   ];
 
-  return all
-    .filter((item) => JSON.stringify(item).toLowerCase().includes(q) || q.split(/\s+/).some((word) => JSON.stringify(item).toLowerCase().includes(word)))
-    .slice(0, 16);
+  const haystackMatch = (item) => {
+    const haystack = JSON.stringify(item).toLowerCase();
+    return haystack.includes(q) || words.some((word) => haystack.includes(word));
+  };
+
+  const matches = all.filter(haystackMatch);
+  if (matches.length) return matches.slice(0, 16);
+
+  return all.slice(0, 12);
 }

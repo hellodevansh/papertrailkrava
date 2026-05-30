@@ -14,8 +14,17 @@ export default withStore(async function handler(req, res) {
     }
 
     const reader = await readDocumentText(body);
+    if (!reader.text?.trim()) {
+      sendError(
+        res,
+        400,
+        reader.warning || "No text could be read from this document. Paste as text, or set GEMINI_API_KEY on Vercel for PDFs/images.",
+      );
+      return;
+    }
+
     const { extraction, provider, warning } = await extractDocumentWithKrava(body, reader.text);
-    const state = await upsertExtraction(extraction, body);
+    const { state, persist } = await upsertExtraction(extraction, body);
     const krava = await savePaperTrailMemories(extraction);
 
     sendJson(res, 200, {
@@ -25,6 +34,7 @@ export default withStore(async function handler(req, res) {
       warning: warning || reader.warning,
       krava,
       state,
+      persist,
     });
   } catch (error) {
     sendError(res, 500, "Document extraction failed.", error.message);
