@@ -1,0 +1,5 @@
+.tools
+.papertrail-data
+demo-documents
+*.tsbuildinfo
+node_modules/.cache

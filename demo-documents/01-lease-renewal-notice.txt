@@ -1,0 +1,27 @@
+FRONTIER PROPERTY MANAGEMENT
+Lease Renewal and Rent Adjustment Notice
+
+Tenant: Maya Patel
+Property: 995 Market Street, Unit 1502, San Francisco, CA 94103
+Landlord contact: leasing@frontierpm.example
+
+Current lease term:
+Start date: July 1, 2025
+End date: June 30, 2026
+
+Renewal offer:
+New lease start date: July 1, 2026
+New lease end date: June 30, 2027
+Current monthly rent: $2,850
+New monthly rent: $3,100
+Security deposit on file: $2,850
+
+Action required:
+If you want to renew, request a payment plan, or request an accommodation,
+please respond by June 7, 2026. Include your unit number and the reason for
+your request. If we do not hear from you by June 7, we will assume you are
+declining the renewal offer.
+
+Private note pasted by tenant:
+I may need a payment plan because of recent medical expenses, but I do not
+want that medical reason included unless I explicitly approve it.

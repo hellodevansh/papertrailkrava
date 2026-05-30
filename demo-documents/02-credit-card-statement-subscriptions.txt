@@ -1,0 +1,27 @@
+BLUE HARBOR CARD
+Monthly Statement
+
+Cardholder: Maya Patel
+Account ending: 4421
+Statement period: May 1, 2026 - May 28, 2026
+Payment due date: June 12, 2026
+Minimum payment due: $85.00
+Statement balance: $1,246.32
+
+Recurring and subscription charges:
+May 04  Netflix                     $15.49   Monthly streaming
+May 06  Adobe Creative Cloud         $59.99   Monthly software
+May 09  Spotify                     $11.99   Monthly music
+May 12  Apple iCloud                 $2.99    Monthly storage
+May 17  Gympass                     $39.00   Monthly fitness
+May 21  Notion                      $10.00   Monthly productivity
+May 23  The Daily Ledger             $8.00    Monthly news
+
+Potential non-subscription charges:
+May 03  Frontier Grocery            $76.42
+May 14  RideShare                   $18.70
+May 27  City Pharmacy               $42.18
+
+Customer service:
+support@blueharbor.example
+1-800-555-0199
