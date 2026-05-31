@@ -294,9 +294,24 @@ function App() {
   }, [toast]);
 
   const applyState = (next: PaperTrailState) => setState(next);
-  const clearSession = () => {
-    setState(emptyState); setChat([]); setFiredIds([]);
-    setDemoNow(Date.now()); setError(null); setToast("Workspace cleared");
+
+  const startFreshDemo = (message = "Fresh demo ready") => {
+    setState(emptyState);
+    setChat([]);
+    setFiredIds([]);
+    setLinqReply("");
+    setDemoNow(Date.now());
+    setError(null);
+    setToast(message);
+  };
+
+  const clearSession = () => startFreshDemo("Workspace cleared");
+
+  const clearInboxThread = () => {
+    setState((s) => ({ ...s, linqActivities: [], updatedAt: new Date().toISOString() }));
+    setLinqReply("");
+    setFiredIds([]);
+    setToast("iMessage thread cleared");
   };
 
   const stats = useMemo(() => [
@@ -446,7 +461,13 @@ function App() {
     await advanceClock(Math.max(days, 1));
   };
 
-  const resetClock = () => { setDemoNow(Date.now()); setFiredIds([]); setToast("Clock reset to today"); };
+  const resetClock = () => {
+    setDemoNow(Date.now());
+    setFiredIds([]);
+    setState((s) => ({ ...s, linqActivities: [], updatedAt: new Date().toISOString() }));
+    setLinqReply("");
+    setToast("Demo reset — clock and inbox cleared");
+  };
 
   const sendLinqReply = async (text = linqReply) => {
     if (!text.trim()) return;
@@ -466,7 +487,7 @@ function App() {
     pasteText, setPasteText, extractPasted, clearSession,
     question, setQuestion, ask, chat, suggestedQuestions,
     timelineItems, stats, progressPct, sentReminders,
-    advanceClock, jumpToNextReminder, resetClock, fireDue, sendDigest,
+    advanceClock, jumpToNextReminder, resetClock, fireDue, sendDigest, clearInboxThread,
     linqReply, setLinqReply, sendLinqReply, linqThread, linqDelivered,
     goto: setView,
   };
@@ -1028,22 +1049,15 @@ function TimelineSection({ timelineItems }: { timelineItems: any[]; compact?: bo
 
 const INBOX_PROMPTS = ["What's due this week?", "How much do I owe?", "Summarize my documents", "checklist"];
 
-const INBOX_PREVIEW: Array<{ id: string; direction: "inbound" | "outbound"; text: string; kind?: string }> = [
-  { id: "p1", direction: "outbound", text: "Good morning — 2 deadlines this week.", kind: "digest" },
-  { id: "p2", direction: "outbound", text: "Lease renewal · Jun 15 ($2,400)\nCard payment · May 22 ($1,847)", kind: "reminder" },
-  { id: "p3", direction: "inbound", text: "What's due this week?" },
-  { id: "p4", direction: "outbound", text: "Lease Jun 15, Visa May 22. Reply checklist when you're caught up." },
-];
-
-function InboxBubble({ activity, preview }: { activity: { direction: string; text: string; kind?: string; effect?: string | null; createdAt?: string | number }; preview?: boolean }) {
+function InboxBubble({ activity }: { activity: { direction: string; text: string; kind?: string; effect?: string | null; createdAt?: string | number } }) {
   const mine = activity.direction === "inbound";
   return (
-    <div className={`${mine ? "bubble out" : "bubble in"}${activity.effect ? " fx" : ""}${preview ? " bubblePreview" : ""}`}>
+    <div className={`${mine ? "bubble out" : "bubble in"}${activity.effect ? " fx" : ""}`}>
       {activity.kind === "reminder" && <span className="bubbleTag"><Bell size={10} /> Reminder</span>}
       {activity.kind === "digest" && <span className="bubbleTag"><Sparkles size={10} /> Morning brief</span>}
       {activity.kind === "celebration" && <span className="bubbleTag"><Sparkles size={10} /> All caught up</span>}
       <p>{activity.text}</p>
-      {!preview && activity.createdAt && (
+      {activity.createdAt && (
         <small>{new Date(activity.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</small>
       )}
     </div>
@@ -1060,8 +1074,6 @@ function InboxPage(props: any) {
   const mode = status?.linq?.mode === "live" ? "Live" : "Demo";
   const clockDate = new Date(demoNow).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
   const dueCount = reminders.filter((r: Reminder) => r.status === "due" && !firedIds.includes(r.id)).length;
-  const showPreview = !hasDocs && !linqThread.length;
-  const threadItems = linqThread.length ? linqThread : showPreview ? INBOX_PREVIEW : [];
 
   return (
     <div className="inboxPage">
@@ -1087,7 +1099,7 @@ function InboxPage(props: any) {
               <button type="button" className="inboxTmBtn" onClick={() => advanceClock(1)} disabled={!hasDocs || Boolean(busy)}>+1 day</button>
               <button type="button" className="inboxTmBtn" onClick={() => advanceClock(7)} disabled={!hasDocs || Boolean(busy)}>+1 week</button>
               <button type="button" className="inboxTmBtn" onClick={jumpToNextReminder} disabled={!hasDocs || Boolean(busy)}>Next due</button>
-              <button type="button" className="inboxTmBtn" onClick={resetClock} disabled={Boolean(busy)}>Reset</button>
+              <button type="button" className="inboxTmBtn" onClick={resetClock} disabled={Boolean(busy)}>New demo</button>
             </div>
           </section>
 
@@ -1128,33 +1140,29 @@ function InboxPage(props: any) {
         </aside>
 
         <div className="inboxStage">
-          <div className={`phone phoneFull${showPreview ? " phonePreview" : ""}`}>
-            {showPreview && <span className="phonePreviewBadge">Preview</span>}
+          <div className="phone phoneFull">
             <div className="phoneHead">
               <span className="avatar"><ShieldCheck size={16} /></span>
               <div><strong>PaperTrail</strong><span>{toPhone}</span></div>
               <span className="linqTag linqTagLight">iMessage</span>
             </div>
             <div className="phoneThread phoneThreadFill">
-              {!threadItems.length && (
+              {!linqThread.length && (
                 <div className="threadEmpty">
                   <MessageSquareText size={28} />
-                  <strong>Your thread is empty</strong>
-                  <span>Fire a reminder from the left, or pick a prompt on the right.</span>
+                  <strong>{hasDocs ? "Your thread is empty" : "Start a fresh demo"}</strong>
+                  <span>
+                    {hasDocs
+                      ? "Fire a reminder from the left, or send a message below."
+                      : "Upload on Home, then return here to build the thread live."}
+                  </span>
                 </div>
               )}
-              {threadItems.map((a: LinqActivity & { id: string }) => (
-                <InboxBubble key={a.id} activity={a} preview={showPreview} />
+              {linqThread.map((a: LinqActivity) => (
+                <InboxBubble key={a.id} activity={a} />
               ))}
               {linqDelivered && <div className="delivered">Delivered</div>}
             </div>
-            {showPreview && (
-              <div className="inboxPreviewBar">
-                <button type="button" className="primary" onClick={() => goto("home")}>
-                  <Paperclip size={14} /> Upload on Home
-                </button>
-              </div>
-            )}
             <div className="phoneComposer">
               <input
                 value={linqReply}
