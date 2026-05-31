@@ -1,46 +1,23 @@
-export const sampleDocuments = [
-  {
-    id: "lease-renewal",
-    name: "Lease Renewal Notice",
-    mimeType: "text/plain",
-    text: `Hi Maya,
-
-Your lease at 995 Market Street, Unit 1502 renews on July 1, 2026 and expires June 30, 2027.
-Your rent will increase from $2,850 to $3,100 per month starting July 1.
-If you need a payment plan or accommodation, respond by June 7, 2026.
-Please include your unit number and reason for request.
-
-Frontier Property Management
-leasing@example.com`,
-  },
-  {
-    id: "card-statement",
-    name: "Credit Card Statement",
-    mimeType: "text/plain",
-    text: `Statement period: May 1 - May 28, 2026
-Payment due: June 12, 2026
-Minimum payment: $85.00
-
-Recurring charges:
-Netflix - $15.49 monthly - May 4
-Spotify - $11.99 monthly - May 9
-iCloud - $2.99 monthly - May 12
-Gympass - $39.00 monthly - May 17
-Notion - $10.00 monthly - May 21
-
-Card ending in 4421.`,
-  },
-  {
-    id: "insurance-denial",
-    name: "Insurance Appeal Letter",
-    mimeType: "text/plain",
-    text: `Claim ID: INS-48291-A
-Member: Maya Patel
-Your claim for physical therapy reimbursement was denied because documentation was missing.
-Appeal deadline: June 14, 2026.
-Required documents: referral letter, itemized receipt, provider NPI, and visit dates.
-Mail or upload your appeal before the deadline.`,
-  },
+/**
+ * Reference metadata for demo-documents/ (upload manually during the live demo).
+ */
+export const demoDocumentManifest = [
+  { fileBase: "01-pacific-water-power-past-due-notice", uploadOrder: 1, keyDates: ["2026-06-04", "2026-06-05", "2026-06-10"] },
+  { fileBase: "02-clearview-robotics-open-enrollment", uploadOrder: 2, keyDates: ["2026-06-03"] },
+  { fileBase: "03-frontier-lease-renewal-notice", uploadOrder: 3, keyDates: ["2026-06-07", "2026-07-01"] },
+  { fileBase: "04-blue-harbor-card-statement", uploadOrder: 4, keyDates: ["2026-06-12"] },
+  { fileBase: "05-northstar-health-appeal-denial", uploadOrder: 5, keyDates: ["2026-06-14"] },
+  { fileBase: "06-irs-estimated-tax-voucher", uploadOrder: 6, keyDates: ["2026-06-15"] },
+  { fileBase: "07-california-dmv-registration-renewal", uploadOrder: 7, keyDates: ["2026-06-22", "2026-06-30"] },
+  { fileBase: "08-ucsf-medical-patient-statement", uploadOrder: 8, keyDates: ["2026-06-06", "2026-06-08"] },
+  { fileBase: "09-sf-county-property-tax-installment", uploadOrder: 9, keyDates: ["2026-06-10"] },
+  { fileBase: "10-mission-bay-towers-hoa-assessment", uploadOrder: 10, keyDates: ["2026-06-17", "2026-06-20"] },
+  { fileBase: "11-lemonade-renters-insurance-renewal", uploadOrder: 11, keyDates: ["2026-06-19", "2026-07-01"] },
+  { fileBase: "12-xfinity-internet-price-increase", uploadOrder: 12, keyDates: ["2026-06-09", "2026-06-11"] },
+  { fileBase: "13-dr-chen-physical-therapy-referral", uploadOrder: 13, keyDates: ["2026-06-14"] },
+  { fileBase: "14-navient-student-loan-billing-statement", uploadOrder: 14, keyDates: ["2026-06-24"] },
+  { fileBase: "15-sunset-veterinary-wellness-invoice", uploadOrder: 15, keyDates: ["2026-06-26", "2026-07-31"] },
+  { fileBase: "16-apple-card-savings-transfer-1099-int", uploadOrder: 16, keyDates: ["2026-06-15", "2026-06-18"] },
 ];
 
 export function emptyExtraction(name = "Untitled document") {
@@ -55,7 +32,7 @@ export function emptyExtraction(name = "Untitled document") {
     payments: [],
     contacts: [],
     actionItems: [],
-    sensitiveFields: [],
+    keyDetails: [],
     questionsAnsweredByThisDoc: [],
   };
 }

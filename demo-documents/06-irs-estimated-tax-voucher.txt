@@ -1,0 +1,47 @@
+DEPARTMENT OF THE TREASURY — INTERNAL REVENUE SERVICE
+2026 Form 1040-ES — Payment Voucher 2 (OCR-friendly facsimile for demo)
+
+────────────────────────────────────────────────────────────────
+                    ESTIMATED TAX PAYMENT VOUCHER
+────────────────────────────────────────────────────────────────
+
+Taxpayer name:          Maya Patel
+SSN (last 4 shown):     •••-••-4821
+Tax year:               2026
+Voucher number:         2 (second quarter)
+
+PAYMENT APPLICATION
+───────────────────
+This voucher is for estimated federal income tax — Q2 2026.
+
+Amount due (line 6):                        $1,850.00
+Due date:                                   June 15, 2026
+
+Pay by June 15, 2026 to avoid underpayment penalty for Q2.
+
+MAKE CHECK PAYABLE TO:  "United States Treasury"
+Memo line:              "2026 Form 1040-ES" + SSN + "Voucher 2"
+
+ELECTRONIC PAYMENT
+──────────────────
+IRS Direct Pay: https://www.irs.gov/directpay
+EFTPS enrollment required for business days settlement.
+
+MAILING ADDRESS (if paying by check)
+────────────────────────────────────
+Internal Revenue Service
+P.O. Box 931100
+Louisville, KY 40293-1100
+
+CALIFORNIA FRANCHISE TAX BOARD (related notice)
+───────────────────────────────────────────────
+State estimated payment Q2 also due:        June 15, 2026
+Suggested amount per FTB worksheet:       $620.00
+FTB voucher reference:                      FTB-2026-Q2-4821
+
+IMPORTANT
+─────────
+This facsimile is formatted for document-reading demos. For official filing,
+use IRS-published Form 1040-ES at irs.gov.
+
+Document prepared: May 20, 2026

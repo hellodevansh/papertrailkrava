@@ -1,0 +1,52 @@
+BLUE HARBOR CARD SERVICES
+Consumer Credit — Monthly Account Statement
+
+═══════════════════════════════════════════════════════════════════
+STATEMENT SUMMARY
+═══════════════════════════════════════════════════════════════════
+
+Cardholder:             Maya Patel
+Account ending:         •••• 4421
+Statement closing:      May 28, 2026
+Statement period:       May 1, 2026 — May 28, 2026
+
+PAYMENT INFORMATION
+───────────────────
+Payment due date:       June 12, 2026
+Minimum payment due:    $85.00
+New balance:            $1,246.32
+Credit line:            $8,500.00
+Available credit:       $7,253.68
+
+If we do not receive at least the minimum payment by June 12, 2026, you may
+be charged a late fee of up to $40.00 and your APR may increase.
+
+───────────────────────────────────────────────────────────────────
+TRANSACTION DETAIL — RECURRING & SUBSCRIPTIONS
+───────────────────────────────────────────────────────────────────
+Date        Description                      Amount    Category
+05/04/26    NETFLIX.COM                      $15.49    Streaming
+05/06/26    ADOBE *CREATIVE CLD              $59.99    Software
+05/09/26    SPOTIFY USA                      $11.99    Music
+05/12/26    APPLE.COM/BILL ICLOUD            $2.99     Cloud storage
+05/17/26    GYMPASS INC                      $39.00    Fitness
+05/21/26    NOTION LABS INC                  $10.00    Productivity
+05/23/26    THE DAILY LEDGER                 $8.00     News/media
+
+───────────────────────────────────────────────────────────────────
+OTHER ACTIVITY (selected)
+───────────────────────────────────────────────────────────────────
+05/03/26    FRONTIER GROCERY SF              $76.42
+05/14/26    LYFT *RIDE                       $18.70
+05/27/26    CITY PHARMACY #442               $42.18
+
+───────────────────────────────────────────────────────────────────
+REWARDS & NOTICES
+───────────────────────────────────────────────────────────────────
+Cashback earned this period: $18.42
+Annual fee: None
+
+Customer service: 1-800-555-0199 | support@blueharbor.example
+Pay online: https://pay.blueharbor.example
+
+Blue Harbor Card — Member FDIC (issuer partner bank)

@@ -12,12 +12,12 @@ export default withStore(async function handler(req, res) {
       return;
     }
 
-    const result = await simulateInboundMessage(body.text);
+    const result = await simulateInboundMessage(body.text, body.state);
     sendJson(res, 200, {
       ok: true,
       linq: getLinqStatus(),
       result,
-      state: getState(),
+      state: result.state || getState(),
     });
   } catch (error) {
     sendError(res, 500, "Simulated iMessage reply failed.", error.message);

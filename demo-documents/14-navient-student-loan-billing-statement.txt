@@ -1,0 +1,48 @@
+NAVIENT — LOAN SERVICING
+Billing Statement — Federal Direct Loans
+
+Statement date:         May 28, 2026
+Statement ID:           NAV-2026-05-884210
+Borrower:               Maya Patel
+
+MAILING ADDRESS ON FILE
+───────────────────────
+995 Market Street, Unit 1502
+San Francisco, CA 94103
+
+LOAN SUMMARY
+────────────
+Loan type:              Direct Unsubsidized (Undergrad)
+Loan ID:                **** 4421
+Original principal:     $18,500.00
+Current principal:      $12,884.12
+Interest rate:          4.99% fixed
+Repayment plan:         Standard (Level)
+
+PAYMENT DUE
+───────────
+Payment amount due:     $198.00
+Due date:               June 24, 2026
+Autopay status:         Enrolled — bank account ending 8821
+
+IF NOT RECEIVED BY JUNE 24, 2026
+────────────────────────────────
+Late fee: up to $0.00 (federal loans — delinquency reported after 30 days)
+Credit bureau reporting may begin after 90 days delinquent.
+
+YEAR-TO-DATE (2026)
+───────────────────
+Total paid:             $990.00
+Interest paid:          $412.18
+Principal paid:         $577.82
+
+PAYMENT OPTIONS
+───────────────
+Web: https://my.navient.example
+Phone: 1-800-722-1300
+
+For income-driven repayment review, upload tax return by: July 15, 2026
+
+Navient — Servicing on behalf of U.S. Department of Education (demo facsimile)
+
+Detach:  |  Borrower: Maya Patel  |  Due: 6/24/26  |  Amount: $198.00  |

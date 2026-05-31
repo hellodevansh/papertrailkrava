@@ -1,0 +1,48 @@
+SUNSET VETERINARY CLINIC
+Small Animal Medicine & Surgery
+
+INVOICE / REMINDER
+
+Invoice #:              SV-2026-8842
+Date of service:        May 20, 2026
+Client:                 Maya Patel
+Patient:                Mochi (Feline, DSH, 6 yrs)
+Patient ID:             PET-7712-MOCHI
+Microchip:              985112004882104
+
+SERVICE ADDRESS (client)
+────────────────────────
+995 Market Street, Unit 1502, San Francisco, CA 94103
+
+SERVICES RENDERED
+─────────────────
+Annual wellness exam                          $85.00
+FVRCP booster vaccination                     $42.00
+Rabies vaccine (1 yr)                         $38.00
+Fecal parasite screen                         $54.00
+Revolution Plus (6 mo supply)                 $112.00
+─────────────────────────────────────────────────────
+Subtotal:                                     $331.00
+SF sales tax (8.625%):                        $28.55
+─────────────────────────────────────────────────────
+TOTAL DUE:                                    $359.55
+
+PAYMENT
+───────
+Balance due by:                             June 26, 2026
+Pay online: https://pay.sunsetvet.example/inv/SV-2026-8842
+
+NEXT APPOINTMENT RECOMMENDED
+────────────────────────────
+Dental cleaning under anesthesia — schedule before: July 31, 2026
+Estimate provided on request ($650–$890 depending on extractions).
+
+Reminders:
+• Rabies certificate emailed to owner 05/20/2026
+• Boarding requires Bordetella — due for booster by September 1, 2026
+
+Sunset Veterinary Clinic
+2900 24th Street, San Francisco, CA 94110
+(415) 555-7299 · billing@sunsetvet.example
+
+Thank you for trusting us with Mochi's care.

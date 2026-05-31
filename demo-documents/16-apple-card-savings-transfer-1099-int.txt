@@ -1,0 +1,34 @@
+GOLDMAN SACHS BANK USA — APPLE CARD / SAVINGS
+Tax Information Notice — Form 1099-INT (COPY B)
+
+Tax year:               2025 (calendar year)
+Payer TIN (masked):     **-***8842
+Recipient:              Maya Patel
+Recipient TIN (masked): **-***4821
+
+MAILING ADDRESS
+───────────────
+995 Market Street, Unit 1502
+San Francisco, CA 94103
+
+1099-INT SUMMARY
+────────────────
+1. Interest income (Box 1):                 $184.27
+4. Federal income tax withheld (Box 4):     $0.00
+Account: Apple Card Savings — ending 9921
+
+IMPORTANT DEADLINES
+───────────────────
+IRS reporting copy furnished:               January 31, 2026 (on file)
+Suggested tax prep upload by:               June 18, 2026
+  (per your CPA engagement letter — Clearview Robotics referral)
+
+STATE OF CALIFORNIA
+───────────────────
+California tax return filing deadline:      June 15, 2026 (if on extension,
+                                            confirm with preparer)
+
+This is not a bill. Retain for tax filing. Questions: support@applecard.example
+
+Goldman Sachs Bank USA, Salt Lake City, UT — Apple Card partner bank
+Document re-issued for demo: May 22, 2026

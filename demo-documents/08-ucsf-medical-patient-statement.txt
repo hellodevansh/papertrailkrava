@@ -1,0 +1,61 @@
+UCSF HEALTH — PATIENT FINANCIAL SERVICES
+Stanford Street Clinic · Mission Bay Campus
+
+═══════════════════════════════════════════════════════════════════
+                    PATIENT BILLING STATEMENT
+═══════════════════════════════════════════════════════════════════
+
+Statement date:         May 29, 2026
+Statement number:       PS-2026-88421-03
+Account ID:             UCSF-PT-7721044
+
+GUARANTOR / PATIENT
+───────────────────
+Maya Patel
+995 Market Street, Unit 1502
+San Francisco, CA 94103
+DOB: 03/14/1992 (on file)
+Phone: (415) 555-0142
+
+INSURANCE ON FILE (primary)
+───────────────────────────
+Northstar Health Plan — Member ID NS-2048-7721
+Group: Clearview Robotics 8842
+Policy status at billing: Active
+
+VISIT SUMMARY
+─────────────
+Date of service:        May 3, 2026
+Location:               Valencia Physical Therapy (contracted)
+Rendering provider:     Dr. Ana Morales, DPT
+Referring provider:     Dr. James Chen, MD (PCP)
+
+CHARGES
+───────
+Description                              Billed      Ins. paid   You owe
+────────────────────────────────────────────────────────────────────
+Physical therapy — follow-up 97110       $420.00     $0.00       $420.00
+Facility fee — outpatient                $85.00      $0.00       $85.00
+────────────────────────────────────────────────────────────────────
+TOTAL PATIENT RESPONSIBILITY                         $505.00
+
+NOTE: Northstar denied claim INS-48291-A for missing documentation.
+      If your appeal is approved, this balance may be reduced.
+
+PAYMENT DUE
+───────────
+Minimum due to UCSF by:                 June 8, 2026
+Payment plan request deadline:          June 6, 2026
+
+Pay online: https://pay.ucsfhealth.example  |  Code: 7721044
+Questions: (415) 555-8800 · billing@ucsfhealth.example
+
+Late balances over 90 days may be referred to collections.
+
+┌─────────────────────────────────────────────────────────────────┐
+│ REMITTANCE STUB — detach and return with check                  │
+│ Account: UCSF-PT-7721044    Amount due: $505.00    Due 6/8/26 │
+│ Payable to: UCSF Health    Mail: PO Box 742901, SF CA 94174     │
+└─────────────────────────────────────────────────────────────────┘
+
+THIS IS A BILL — NOT A INSURANCE EXPLANATION OF BENEFITS

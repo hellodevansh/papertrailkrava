@@ -1,0 +1,55 @@
+NORTHSTAR HEALTH PLAN
+Member Services — Claims & Appeals Department
+
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+EXPLANATION OF BENEFITS — CLAIM DENIED (APPEAL RIGHTS ENCLOSED)
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+
+Letter date:            May 26, 2026
+Mail date:              May 27, 2026
+
+MEMBER
+──────
+Maya Patel
+Member ID:              NS-2048-7721
+Group:                  CLEARVIEW ROBOTICS — 8842
+
+CLAIM DETAILS
+─────────────
+Claim ID:               INS-48291-A
+Date of service:        May 3, 2026
+Provider:               Valencia Physical Therapy
+Place of service:       Office — outpatient
+Procedure:              Physical therapy — follow-up (CPT 97110)
+Amount billed:          $420.00
+Plan allowed:           $315.00
+Plan paid:              $0.00
+Member responsibility:  $420.00 (pending appeal)
+
+DENIAL REASON
+─────────────
+Claim denied — missing documentation at time of adjudication.
+
+Required to overturn denial:
+  • Referral letter from primary care physician (dated within 90 days)
+  • Itemized receipt showing dates of service
+  • Provider NPI: must match Valencia Physical Therapy (NPI 1234567890)
+  • Diagnosis / visit dates on provider letterhead
+
+APPEAL DEADLINE
+───────────────
+Your written appeal must be received by Northstar no later than:
+
+    June 14, 2026
+
+Appeals received after this date may be rejected without review.
+
+HOW TO APPEAL
+─────────────
+Portal:  https://members.northstar.example/appeals
+Mail:    Northstar Appeals Unit, PO Box 9912, Oakland, CA 94613
+Phone:   1-888-555-0177 (reference Claim ID INS-48291-A)
+
+This document contains protected health information (PHI).
+
+Northstar Health Plan — NCQA accredited

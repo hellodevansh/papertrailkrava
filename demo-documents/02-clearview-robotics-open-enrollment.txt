@@ -1,0 +1,57 @@
+CLEARVIEW ROBOTICS, INC.
+Human Resources — Benefits Administration
+
+═══════════════════════════════════════════════════════════════════
+                    OPEN ENROLLMENT — ACTION REQUIRED
+═══════════════════════════════════════════════════════════════════
+
+FROM:       benefits@clearview-robotics.example
+TO:         Maya Patel <maya.patel@clearview-robotics.example>
+DATE:       May 27, 2026 10:02 AM Pacific
+SUBJECT:    Open Enrollment closes June 3 — verify dependents & beneficiaries
+MESSAGE-ID: HR-OE-2026-MAYA-7712
+
+Hi Maya,
+
+Your 2026–2027 benefits Open Enrollment window closes on:
+
+    *** June 3, 2026 at 5:00 PM Pacific Time ***
+
+If you do not submit elections by this deadline, your current plan selections
+will roll forward except where noted below.
+
+CURRENT ELECTIONS (pay period deduction estimates)
+──────────────────────────────────────────────────
+Medical:     Silver PPO — Employee only          $214.00 / paycheck
+Dental:      Standard Dental — Employee only      $18.50 / paycheck
+Vision:      Not enrolled                         $0.00
+HSA:         Payroll contribution                 $125.00 / paycheck
+Life:        Basic life (employer-paid)           $0.00
+
+ACTION REQUIRED — DEPENDENT VERIFICATION
+────────────────────────────────────────
+You indicated you may add a dependent during this window. Acceptable
+verification documents must be uploaded in Workday by:
+
+    June 3, 2026
+
+Accepted documents: marriage certificate, domestic partnership declaration,
+birth certificate, or federal tax return listing dependent status.
+
+ACTION REQUIRED — BENEFICIARY REVIEW
+────────────────────────────────────
+Our records show you have not updated life insurance beneficiaries since
+April 2023. Please review and confirm beneficiary designations before:
+
+    June 3, 2026
+
+PORTAL
+──────
+Workday > Benefits > Open Enrollment 2026
+HR Service Desk: benefits@clearview-robotics.example
+Extension: 4200
+
+Thank you,
+Clearview Robotics Benefits Team
+
+CONFIDENTIAL: This message is intended for the addressee only.

@@ -27,9 +27,11 @@ export default withStore(async function handler(req, res) {
   }
   await recordWebhookEvent(eventId);
 
+  const payloadState = payload.state || payload.clientState || null;
+
   try {
-    const result = await handleInboundLinq(payload);
-    sendJson(res, 200, { ok: true, result });
+    const result = await handleInboundLinq(payload, payloadState);
+    sendJson(res, 200, { ok: true, result, state: result.state || null });
   } catch (error) {
     sendError(res, 500, "Webhook handling failed.", error.message);
   }

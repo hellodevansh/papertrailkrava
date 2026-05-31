@@ -2,18 +2,15 @@ import { allowMethods, sendJson, withStore } from "./_lib/http.js";
 import { envStatus } from "./_lib/env.js";
 import { getKravaSession } from "./_lib/krava.js";
 import { getLinqStatus } from "./_lib/linq.js";
-import { checkRedisHealth, getState, getStorageStatus } from "./_lib/store.js";
+import { getStorageStatus } from "./_lib/store.js";
 
 export default withStore(async function handler(req, res) {
   if (!allowMethods(req, res, ["GET"])) return;
   const krava = await getKravaSession();
-  const redis = await checkRedisHealth();
   sendJson(res, 200, {
     env: envStatus(),
     krava,
     linq: getLinqStatus(),
     storage: getStorageStatus(),
-    redis,
-    state: getState(),
   });
 });

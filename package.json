@@ -9,7 +9,9 @@
     "dev:web": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "test": "node scripts/test.mjs",
+    "demo:pdfs": "node scripts/generate-demo-pdfs.mjs"
   },
   "keywords": [],
   "author": "",
@@ -22,7 +24,6 @@
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "@upstash/redis": "^1.38.0",
     "@vitejs/plugin-react": "^6.0.2",
     "concurrently": "^10.0.0",
     "lucide-react": "^1.17.0",

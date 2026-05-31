@@ -1,0 +1,50 @@
+CHEN FAMILY MEDICINE — PRIMARY CARE
+Dr. James Chen, MD · NPI 1982765432
+450 Sutter Street, Suite 1204, San Francisco, CA 94108
+
+────────────────────────────────────────────────────────────────
+                    REFERRAL TO SPECIALIST
+────────────────────────────────────────────────────────────────
+
+Date of referral:       May 4, 2026
+Referral ID:            REF-2026-44821
+Valid through:          August 4, 2026 (90 days)
+
+PATIENT
+───────
+Maya Patel
+DOB: 03/14/1992
+Member ID (Northstar):  NS-2048-7721
+
+REFERRED TO
+───────────
+Valencia Physical Therapy
+Attn: Dr. Ana Morales, DPT
+NPI: 1234567890
+184 Valencia Street, San Francisco, CA 94103
+
+DIAGNOSIS / REASON
+──────────────────
+ICD-10: M54.50 — Low back pain, unspecified
+Frequency: 2x weekly for 6 weeks, follow-up evaluation after visit 8
+
+CLINICAL NOTE (summary)
+───────────────────────
+Patient reports lumbar discomfort after prolonged desk work. No red flag
+symptoms. Referral for skilled PT — follow-up visit documented 05/03/2026.
+
+INSURANCE AUTHORIZATION
+───────────────────────
+Northstar may require this referral for claim INS-48291-A.
+Member should submit this letter with itemized receipts for appeal by:
+
+    June 14, 2026
+
+Office contact: (415) 555-3310 · records@chenfamilymed.example
+Records release fax: (415) 555-3311
+
+Electronically signed:
+James Chen, MD
+May 4, 2026 14:22 PT
+
+THIS DOCUMENT CONTAINS PROTECTED HEALTH INFORMATION.

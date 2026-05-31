@@ -1,15 +1,25 @@
 import { createKravaClient, createKravaPlatformClient } from "@kravalabs/api-client";
 import { loadEnv } from "./env.js";
-import { getState, pickStateForAsk, searchLocalMemory } from "./store.js";
+import { getState, searchLocalMemory } from "./store.js";
 
 const externalUserId = "papertrail-demo-user";
+
+// Cache the Krava user token in-process so we don't re-run users.getOrCreate on
+// every request — that endpoint is rate-limited and the throttling was forcing
+// the Q&A path to fall back to local answers under burst load.
+let cachedToken = null;
+let cachedTokenAt = 0;
+const TOKEN_TTL_MS = 5 * 60 * 1000;
 
 async function getUserToken() {
   loadEnv();
   if (!process.env.KRAVA_APP_KEY) return null;
+  if (cachedToken && Date.now() - cachedTokenAt < TOKEN_TTL_MS) return cachedToken;
   const platform = createKravaPlatformClient({ appKey: process.env.KRAVA_APP_KEY });
   const user = await platform.users.getOrCreate(externalUserId);
-  return user.userToken;
+  cachedToken = user.userToken;
+  cachedTokenAt = Date.now();
+  return cachedToken;
 }
 
 function parseSseText(streamText) {
@@ -29,11 +39,35 @@ function parseSseText(streamText) {
     .trim();
 }
 
+// Retry on rate limits / transient 5xx so bursty upload flows
+// firing several extractions, then a question) still resolve through Krava
+// instead of dropping to the local fallback.
+async function kravaFetch(url, options, { retries = 3, baseDelay = 1500 } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if ((response.status === 429 || response.status >= 500) && attempt < retries) {
+        const retryAfter = parseFloat(response.headers.get("retry-after") || "0");
+        const delay = retryAfter ? retryAfter * 1000 : baseDelay * (attempt + 1);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      return response;
+    } catch (error) {
+      lastError = error;
+      if (attempt >= retries) throw error;
+      await new Promise((resolve) => setTimeout(resolve, baseDelay * (attempt + 1)));
+    }
+  }
+  throw lastError || new Error("Krava request failed");
+}
+
 async function kravaPlatformChat(message, system) {
   const userToken = await getUserToken();
   if (!userToken) throw new Error("KRAVA_APP_KEY is missing.");
 
-  const response = await fetch("https://krava.io/api/platform/chat", {
+  const response = await kravaFetch("https://krava.io/api/platform/chat", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -64,85 +98,12 @@ function parseJson(text) {
   }
 }
 
-function localExtract(input, documentText = "") {
-  const text = documentText || input.text || "";
-  const lower = text.toLowerCase();
-  const documentName = input.name || "Uploaded document";
+const asArray = (value) => (Array.isArray(value) ? value : []);
 
-  if (lower.includes("netflix") || lower.includes("spotify")) {
-    return {
-      documentName,
-      documentType: "credit_card_statement",
-      summary: "Credit card statement with monthly recurring subscriptions and a payment deadline.",
-      facts: [
-        { label: "Card ending", value: "4421", category: "financial", sensitivity: "high" },
-        { label: "Statement period", value: "May 1 - May 28, 2026", category: "financial", sensitivity: "medium" },
-      ],
-      deadlines: [{ title: "Credit card payment due", date: "2026-06-12", urgency: "high", nextStep: "Pay at least the minimum payment." }],
-      subscriptions: [
-        { merchant: "Netflix", amount: "$15.49", cadence: "monthly", category: "streaming", cancelSuggestion: "Review usage before renewing." },
-        { merchant: "Spotify", amount: "$11.99", cadence: "monthly", category: "music", cancelSuggestion: "Keep if actively used." },
-        { merchant: "iCloud", amount: "$2.99", cadence: "monthly", category: "storage", cancelSuggestion: "Low-cost utility subscription." },
-        { merchant: "Gympass", amount: "$39.00", cadence: "monthly", category: "fitness", cancelSuggestion: "Highest recurring charge; review usage." },
-        { merchant: "Notion", amount: "$10.00", cadence: "monthly", category: "productivity", cancelSuggestion: "Cancel if no active workspace need." },
-      ],
-      payments: [{ label: "Minimum payment", amount: "$85.00", dueDate: "2026-06-12", payee: "Credit card issuer" }],
-      contacts: [],
-      actionItems: [{ title: "Review subscriptions over $20", priority: "medium", dueDate: "2026-06-12", suggestedAction: "Consider cancelling Gympass if unused." }],
-      sensitiveFields: [{ label: "Card ending", value: "4421", category: "financial", reason: "Payment instrument identifier" }],
-      questionsAnsweredByThisDoc: ["What subscriptions am I paying for?", "What bills are due this week?"],
-      kravaRole: "local fallback used because Krava extraction was unavailable.",
-    };
-  }
-
-  if (lower.includes("claim") || lower.includes("appeal")) {
-    return {
-      documentName,
-      documentType: "insurance_denial",
-      summary: "Insurance denial letter requiring missing documentation before an appeal deadline.",
-      facts: [
-        { label: "Claim ID", value: "INS-48291-A", category: "insurance", sensitivity: "high" },
-        { label: "Missing documents", value: "referral letter, itemized receipt, provider NPI, visit dates", category: "health", sensitivity: "high" },
-      ],
-      deadlines: [{ title: "Insurance appeal deadline", date: "2026-06-14", urgency: "high", nextStep: "Collect missing documentation and submit appeal." }],
-      subscriptions: [],
-      payments: [],
-      contacts: [],
-      actionItems: [{ title: "Prepare insurance appeal packet", priority: "high", dueDate: "2026-06-14", suggestedAction: "Gather referral, receipt, NPI, and visit dates." }],
-      sensitiveFields: [
-        { label: "Claim ID", value: "INS-48291-A", category: "insurance", reason: "Claim identifier" },
-        { label: "Treatment type", value: "physical therapy", category: "health", reason: "Health-related service" },
-      ],
-      questionsAnsweredByThisDoc: ["What insurance claim is missing documents?", "What is urgent this week?"],
-      kravaRole: "local fallback used because Krava extraction was unavailable.",
-    };
-  }
-
-  return {
-    documentName,
-    documentType: "lease_notice",
-    summary: "Lease renewal notice with a rent increase and response deadline.",
-    facts: [
-      { label: "Address", value: "995 Market Street, Unit 1502", category: "housing", sensitivity: "high" },
-      { label: "Current rent", value: "$2,850", category: "financial", sensitivity: "high" },
-      { label: "New rent", value: "$3,100", category: "financial", sensitivity: "high" },
-      { label: "Lease expiration", value: "June 30, 2027", category: "housing", sensitivity: "medium" },
-    ],
-    deadlines: [{ title: "Respond to lease notice", date: "2026-06-07", urgency: "high", nextStep: "Request payment plan or accommodation before deadline." }],
-    subscriptions: [],
-    payments: [{ label: "New monthly rent", amount: "$3,100", dueDate: "2026-07-01", payee: "Frontier Property Management" }],
-    contacts: [{ name: "Frontier Property Management", role: "Landlord", contact: "leasing@example.com" }],
-    actionItems: [{ title: "Draft landlord reply", priority: "high", dueDate: "2026-06-07", suggestedAction: "Ask for a payment plan while withholding personal reasons unless approved." }],
-    sensitiveFields: [
-      { label: "Address", value: "995 Market Street, Unit 1502", category: "housing", reason: "Home address" },
-      { label: "Rent amount", value: "$2,850 -> $3,100", category: "financial", reason: "Financial obligation" },
-      { label: "Accommodation reason", value: "Personal reason for request", category: "personal", reason: "Could reveal private circumstances" },
-    ],
-    questionsAnsweredByThisDoc: ["When does my lease expire?", "When is my lease changing?", "Did my rent increase?"],
-    kravaRole: "local fallback used because Krava extraction was unavailable.",
-  };
-}
-
+// Extraction is performed entirely by Krava. PaperTrail does not read or parse
+// the document content itself — it only sends the text to Krava and formats
+// whatever structured JSON Krava returns. If Krava is unavailable we surface an
+// error rather than inventing data.
 export async function extractDocumentWithKrava(input, documentText) {
   const base = {
     documentId: input.id || crypto.randomUUID(),
@@ -164,34 +125,32 @@ subscriptions array of {merchant,amount,cadence,category,cancelSuggestion},
 payments array of {label,amount,dueDate,payee},
 contacts array of {name,role,contact},
 actionItems array of {title,priority,dueDate,suggestedAction},
-sensitiveFields array of {label,value,category,reason},
+keyDetails array of {label,value,category},
 questionsAnsweredByThisDoc array of strings,
 kravaRole string explaining that Krava performed extraction/classification/reasoning.`;
 
-  try {
-    const answer = await kravaPlatformChat(message, system);
-    const extraction = parseJson(answer);
-    return {
-      extraction: {
-        ...localExtract(input, documentText),
-        ...extraction,
-        documentId: base.documentId,
-        documentName: base.documentName,
-        kravaRole: extraction.kravaRole || "Krava Platform Chat extracted tasks, classified sensitive facts, and produced consent-aware structure.",
-      },
-      provider: "krava-platform-chat",
-    };
-  } catch (error) {
-    return {
-      extraction: {
-        ...localExtract(input, documentText),
-        documentId: base.documentId,
-        documentName: base.documentName,
-      },
-      provider: "local-fallback",
-      warning: error instanceof Error ? error.message : "Krava extraction failed",
-    };
-  }
+  const answer = await kravaPlatformChat(message, system);
+  const extraction = parseJson(answer);
+  return {
+    extraction: {
+      documentId: base.documentId,
+      documentName: base.documentName,
+      documentType: extraction.documentType || "document",
+      summary: extraction.summary || "",
+      facts: asArray(extraction.facts),
+      deadlines: asArray(extraction.deadlines),
+      subscriptions: asArray(extraction.subscriptions),
+      payments: asArray(extraction.payments),
+      contacts: asArray(extraction.contacts),
+      actionItems: asArray(extraction.actionItems),
+      keyDetails: asArray(extraction.keyDetails || extraction.sensitiveFields),
+      questionsAnsweredByThisDoc: asArray(extraction.questionsAnsweredByThisDoc),
+      kravaRole:
+        extraction.kravaRole ||
+        "Krava Platform Chat read the document, extracted the structure, and classified sensitive facts.",
+    },
+    provider: "krava-platform-chat",
+  };
 }
 
 export async function getKravaSession() {
@@ -230,92 +189,30 @@ export async function savePaperTrailMemories(extraction) {
   return { connected: true, saved, mode: "live" };
 }
 
-function localAnswer(query, state) {
-  const q = query.toLowerCase();
-  const accessed = [];
-
-  if (q.includes("subscription")) {
-    accessed.push(...state.subscriptions.map((item) => `${item.merchant} ${item.amount}`));
-    return {
-      answer: state.subscriptions.length
-        ? `I found ${state.subscriptions.length} recurring subscriptions: ${state.subscriptions.map((item) => `${item.merchant} (${item.amount}/${item.cadence})`).join(", ")}. The highest-cost cancellation candidate is ${state.subscriptions.sort((a, b) => parseFloat((b.amount || "0").replace(/[^0-9.]/g, "")) - parseFloat((a.amount || "0").replace(/[^0-9.]/g, "")))[0]?.merchant || "none"}.`
-        : "I do not see subscriptions yet. Add a statement or use the seeded credit card document.",
-      accessed,
-    };
-  }
-
-  if (q.includes("lease") || q.includes("rent")) {
-    const leaseFacts = state.facts.filter((item) => `${item.label} ${item.category}`.toLowerCase().includes("lease") || `${item.label} ${item.category}`.toLowerCase().includes("rent") || `${item.category}`.toLowerCase().includes("housing"));
-    accessed.push(...leaseFacts.map((item) => `${item.label}: ${item.value}`));
-    const expiration = state.facts.find((item) => item.label?.toLowerCase().includes("expiration"));
-    const deadline = state.deadlines.find((item) => item.title?.toLowerCase().includes("lease"));
-    return {
-      answer: `Your lease information shows ${expiration ? `an expiration of ${expiration.value}` : "a lease renewal on file"}. ${deadline ? `You should respond by ${deadline.date}: ${deadline.nextStep}` : "I do not see a response deadline yet."}`,
-      accessed,
-    };
-  }
-
-  if (q.includes("urgent") || q.includes("due")) {
-    const urgent = [...state.deadlines, ...state.actionItems].slice(0, 5);
-    accessed.push(...urgent.map((item) => item.title));
-    return {
-      answer: urgent.length
-        ? `Most urgent items: ${urgent.map((item) => `${item.title}${item.date || item.dueDate ? ` (${item.date || item.dueDate})` : ""}`).join("; ")}.`
-        : "No urgent items yet.",
-      accessed,
-    };
-  }
-
-  const matches = searchLocalMemory(query, state);
-  accessed.push(...matches.slice(0, 6).map((item) => item.label || item.title || item.merchant || item.name || "memory"));
-  return {
-    answer: matches.length
-      ? `I found ${matches.length} relevant private records. The most relevant are: ${matches.slice(0, 4).map((item) => item.label ? `${item.label}: ${item.value}` : item.title || item.merchant || item.name).join("; ")}.`
-      : "I could not find that in your PaperTrail documents yet.",
-    accessed,
-  };
-}
-
-function buildAskContext(state, query) {
-  const memories = searchLocalMemory(query, state);
-  const fallbackRecords = [
-    ...state.facts,
-    ...state.deadlines,
-    ...state.subscriptions,
-    ...state.payments,
-    ...state.actionItems,
-    ...state.contacts,
-  ].slice(0, 16);
-
+// Send Krava only the raw extracted document info (name + the summary Krava
+// produced when reading the file) — no structured facts/deadlines arrays.
+function buildAskContext(state) {
   return {
     documentCount: state.documents.length,
-    documents: state.documents.map((doc) => ({
+    documents: state.documents.slice(0, 10).map((doc) => ({
       name: doc.name,
       type: doc.documentType,
-      summary: doc.summary,
-      uploadedAt: doc.uploadedAt,
+      info: doc.summary || "",
     })),
-    facts: state.facts.slice(0, 24),
-    deadlines: state.deadlines.slice(0, 12),
-    subscriptions: state.subscriptions.slice(0, 12),
-    payments: state.payments.slice(0, 12),
-    actionItems: state.actionItems.slice(0, 12),
-    relevantRecords: memories.length ? memories.slice(0, 16) : fallbackRecords,
-    urgent: [...state.deadlines, ...state.actionItems].slice(0, 8),
   };
 }
 
 export async function askPaperTrail(query, clientState = null) {
-  const state = pickStateForAsk(getState(), clientState);
+  const { sessionState } = await import("./store.js");
+  const state = sessionState(clientState);
   const memories = searchLocalMemory(query, state);
   const sources = [...new Set(memories.map((item) => item.sourceDocument).filter(Boolean))];
-  const context = buildAskContext(state, query);
-  const usedClientState = Boolean(clientState?.documents?.length) && clientState.documents.length > (getState().documents?.length || 0);
+  const context = buildAskContext(state);
 
   if (!state.documents.length) {
     return {
       answer:
-        "I do not have any documents yet. Upload or paste a document, wait for extraction to finish (check the inbox and timeline), then ask again.",
+        "I do not have any documents yet. Upload or paste a document, wait for extraction to finish (check the inbox), then ask again in this session.",
       provider: "papertrail",
       sources: [],
       privateFactsAccessed: [],
@@ -324,32 +221,32 @@ export async function askPaperTrail(query, clientState = null) {
     };
   }
 
-  const local = localAnswer(query, state);
+  const docNames = state.documents.map((d) => d.name);
   const userToken = await getUserToken().catch(() => null);
 
   if (!userToken) {
     return {
-      ...local,
-      provider: "local",
-      sources: sources.length ? sources : state.documents.map((d) => d.name),
-      privateFactsAccessed: local.accessed,
+      answer: "I couldn't reach Krava right now, so I can't answer this. Please try again in a moment.",
+      provider: "unavailable",
+      sources: sources.length ? sources : docNames,
+      privateFactsAccessed: [],
       documentCount: state.documents.length,
-      usedClientState,
+      warning: "Krava is not reachable (missing token).",
     };
   }
 
   try {
-    const compactContext = JSON.stringify(context).slice(0, 3800);
-    const response = await fetch("https://krava.io/api/platform/chat", {
+    const compactContext = JSON.stringify(context).slice(0, 2500);
+    const response = await kravaFetch("https://krava.io/api/platform/chat", {
       method: "POST",
       headers: {
         "content-type": "application/json",
         "x-privy-token": userToken,
       },
       body: JSON.stringify({
-        message: `Question: ${query}\n\nRelevant PaperTrail private context:\n${compactContext}`,
+        message: `Question: ${query}\n\nMy documents:\n${compactContext}`,
         system:
-          "You are PaperTrail, a concise private life-admin assistant. Answer ONLY using the JSON context below (documents, facts, deadlines, subscriptions, payments, actionItems). If the answer is in the context, cite the source document name. If not in context, say what is missing. Do not invent facts.",
+          "You are PaperTrail, a private life-admin assistant. Answer using ONLY the document information provided. Be brief and direct: 1-2 short sentences, or up to 3 short bullet points for lists. Lead with the answer. Do not repeat the question, do not add preamble, disclaimers, or markdown headings. If the answer is not in the documents, say so in one sentence. Never invent facts.",
       }),
     });
 
@@ -363,53 +260,50 @@ export async function askPaperTrail(query, clientState = null) {
       return {
         answer,
         provider: "krava-platform-chat",
-        sources: sources.length ? sources : state.documents.map((d) => d.name),
-        privateFactsAccessed: local.accessed,
+        sources: sources.length ? sources : docNames,
+        privateFactsAccessed: [],
         documentCount: state.documents.length,
-        usedClientState,
       };
     }
-  } catch {
-    // Fall through to the lower-level raw agent API, then local fallback.
-  }
-
-  try {
-    const client = createKravaClient({ getToken: () => userToken });
-    const kravaSearch = await client.memory.search(query, 12).catch(() => ({ memories: [] }));
-    const { gatewayToken } = await client.agent.getGatewayCredentials();
-    const response = await client.v1.agentChat(
-      {
+    throw new Error("Krava returned an empty answer.");
+  } catch (platformError) {
+    // Try the lower-level agent API before giving up — still Krava, no fabrication.
+    try {
+      const client = createKravaClient({ getToken: () => userToken });
+      const { gatewayToken } = await client.agent.getGatewayCredentials();
+      const response = await client.v1.agentChat(
+        {
         model: "claude-haiku-4-5-20251001",
         stream: false,
-        system: "You are PaperTrail, a concise private life-admin assistant. Answer only from provided document memory. Mention when facts are private.",
-        messages: [
-          {
-            role: "user",
-            content: `Question: ${query}\n\nLocal extracted state:\n${JSON.stringify(state).slice(0, 12000)}\n\nKrava memories:\n${JSON.stringify(kravaSearch.memories).slice(0, 12000)}`,
-          },
-        ],
-      },
-      { gatewayToken },
-    );
-    const body = await response.json();
-    const answer = body?.content?.[0]?.text || body?.text || body?.message || local.answer;
-    return {
-      answer,
-      provider: "krava",
-      sources: sources.length ? sources : state.documents.map((d) => d.name),
-      privateFactsAccessed: local.accessed,
-      documentCount: state.documents.length,
-      usedClientState,
-    };
-  } catch (error) {
-    return {
-      ...local,
-      provider: "local-fallback",
-      warning: error.message,
-      sources: sources.length ? sources : state.documents.map((d) => d.name),
-      privateFactsAccessed: local.accessed,
-      documentCount: state.documents.length,
-      usedClientState,
-    };
+        system: "You are PaperTrail, a private life-admin assistant. Answer using ONLY the document information provided. Be brief and direct: 1-2 short sentences, or up to 3 short bullet points. Lead with the answer, no preamble or markdown headings. If not in the documents, say so in one sentence. Never invent facts.",
+          messages: [
+            {
+              role: "user",
+              content: `Question: ${query}\n\nMy documents:\n${JSON.stringify(context).slice(0, 2500)}`,
+            },
+          ],
+        },
+        { gatewayToken },
+      );
+      const body = await response.json();
+      const answer = body?.content?.[0]?.text || body?.text || body?.message;
+      if (!answer) throw new Error("Krava agent returned an empty answer.");
+      return {
+        answer,
+        provider: "krava",
+        sources: sources.length ? sources : docNames,
+        privateFactsAccessed: [],
+        documentCount: state.documents.length,
+      };
+    } catch (agentError) {
+      return {
+        answer: "I couldn't reach Krava to answer this question. Please try again in a moment.",
+        provider: "unavailable",
+        warning: agentError?.message || platformError?.message,
+        sources: sources.length ? sources : docNames,
+        privateFactsAccessed: [],
+        documentCount: state.documents.length,
+      };
+    }
   }
 }

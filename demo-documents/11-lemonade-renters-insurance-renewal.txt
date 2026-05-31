@@ -1,0 +1,44 @@
+LEMONADE INSURANCE COMPANY
+Renters Policy — Renewal Offer
+
+Policy number:          LP-RN-8842-SF-1502
+Named insured:          Maya Patel
+Covered location:       995 Market Street, Apt 1502, San Francisco, CA 94103
+
+RENEWAL OFFER DATE:     May 27, 2026
+CURRENT POLICY EXPIRES: June 30, 2026
+
+Dear Maya,
+
+Your renters policy is scheduled to renew. If we do not hear from you, coverage
+will renew automatically on the terms below unless you cancel before renewal.
+
+COVERAGE SUMMARY (renewal term July 1, 2026 — June 30, 2027)
+────────────────────────────────────────────────────────────
+Personal property:          $45,000
+Loss of use:                $14,000
+Personal liability:         $300,000
+Medical payments to others: $1,000
+Deductible:                 $500
+
+ANNUAL PREMIUM
+──────────────
+Renewal premium:            $312.00 / year ($26.00 / month)
+Prior year premium:         $278.00 / year
+Change:                     +$34.00 (+12.2%) — regional weather model update
+
+PAYMENT
+───────
+If enrolled in autopay, premium will be charged on:   July 1, 2026
+To change coverage or cancel renewal, respond by:     June 19, 2026
+
+ACTION REQUIRED TO CANCEL OR CHANGE
+───────────────────────────────────
+App: lemonade.com/policy/LP-RN-8842-SF-1502
+Email: hello@lemonade.example
+Phone: 1-844-733-8666
+
+Proof of insurance may be requested by Frontier Property Management for
+lease renewal. Certificate available in app after payment.
+
+Lemonade Insurance Company — Licensed in California (demo document)

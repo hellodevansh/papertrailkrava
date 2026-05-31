@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { loadEnv } from "./env.js";
-import { addLinqActivity, applyConsentCommand, getState, setLinqChatId } from "./store.js";
+import { addLinqActivity, getState, setLinqChatId } from "./store.js";
 import { textFromMessageParts } from "./http.js";
 import { askPaperTrail } from "./krava.js";
 
@@ -41,60 +41,76 @@ function demoPhones(direction) {
   return direction === "outbound" ? { from, to } : { from: to, to: from };
 }
 
-async function recordDemoActivity({ direction, kind, text, status, messageId }) {
-  const phones = demoPhones(direction);
-  await addLinqActivity({
-    direction,
-    kind,
-    text,
-    status,
-    messageId: messageId || `demo-${crypto.randomUUID()}`,
-    channel: "imessage",
-    from: phones.from,
-    to: phones.to,
-  });
+async function recordDemoActivity(activity, working) {
+  const phones = demoPhones(activity.direction);
+  return addLinqActivity(
+    {
+      ...activity,
+      messageId: activity.messageId || `demo-${crypto.randomUUID()}`,
+      channel: "imessage",
+      from: phones.from,
+      to: phones.to,
+    },
+    working,
+  );
 }
 
-async function sendLinqMessageDemo(text, kind = "message") {
-  const state = getState();
-  if (!state.linqChatId) await setLinqChatId(demoChatId());
+// Screen effects supported by Linq iMessage (v3). We normalize a friendly name
+// into the {name,type} shape the API expects.
+const SCREEN_EFFECTS = new Set(["confetti", "fireworks", "lasers", "sparkles", "celebration", "hearts", "love", "balloons", "happy_birthday", "echo", "spotlight"]);
+const BUBBLE_EFFECTS = new Set(["slam", "loud", "gentle", "invisible"]);
 
-  await recordDemoActivity({
-    direction: "outbound",
-    kind,
-    text,
-    status: "sent",
-  });
-  await recordDemoActivity({
-    direction: "outbound",
-    kind: "message.delivered",
-    text: "(delivered)",
-    status: "delivered",
-  });
-
-  return { sent: true, mode: "demo", simulated: true, state: getState() };
+function normalizeEffect(effect) {
+  if (!effect) return null;
+  const name = String(effect).toLowerCase();
+  if (SCREEN_EFFECTS.has(name)) return { name, type: "screen" };
+  if (BUBBLE_EFFECTS.has(name)) return { name, type: "bubble" };
+  return null;
 }
 
-async function sendLinqMessageLive(text, kind = "message") {
+async function sendLinqMessageDemo(text, kind = "message", baseState = null, options = {}) {
+  let working = baseState || getState();
+  if (!working.linqChatId) {
+    await setLinqChatId(demoChatId(), working);
+    working = { ...working, linqChatId: demoChatId() };
+  }
+
+  working = await recordDemoActivity({ direction: "outbound", kind, text, status: "sent", effect: options.effect || null }, working);
+  working = await recordDemoActivity(
+    { direction: "outbound", kind: "message.delivered", text: "(delivered)", status: "delivered" },
+    working,
+  );
+
+  return { sent: true, mode: "demo", simulated: true, state: working };
+}
+
+async function sendLinqMessageLive(text, kind = "message", baseState = null, options = {}) {
   const { default: LinqAPIV3 } = await import("@linqapp/sdk");
   const linq = new LinqAPIV3({ apiKey: process.env.LINQ_API_KEY });
-  const state = getState();
+  let working = baseState || getState();
+  const effect = normalizeEffect(options.effect);
   const message = {
     parts: [{ type: "text", value: text }],
+    preferred_service: "iMessage",
     idempotency_key: `papertrail-${kind}-${Date.now()}`,
+    ...(effect ? { effect } : {}),
   };
 
-  if (state.linqChatId) {
-    const result = await linq.chats.messages.send(state.linqChatId, { message });
-    await addLinqActivity({
-      direction: "outbound",
-      kind,
-      text,
-      status: result.message.delivery_status,
-      messageId: result.message.id,
-      channel: "imessage",
-    });
-    return { sent: true, mode: "live", result, state: getState() };
+  if (working.linqChatId) {
+    const result = await linq.chats.messages.send(working.linqChatId, { message });
+    working = await addLinqActivity(
+      {
+        direction: "outbound",
+        kind,
+        text,
+        status: result.message.delivery_status,
+        messageId: result.message.id,
+        channel: "imessage",
+        effect: options.effect || null,
+      },
+      working,
+    );
+    return { sent: true, mode: "live", result, state: working };
   }
 
   const result = await linq.chats.create({
@@ -102,22 +118,27 @@ async function sendLinqMessageLive(text, kind = "message") {
     to: [process.env.DEMO_APPROVER_PHONE],
     message,
   });
-  await setLinqChatId(result.chat.id);
-  await addLinqActivity({
-    direction: "outbound",
-    kind,
-    text,
-    status: result.chat.message.delivery_status,
-    messageId: result.chat.message.id,
-    channel: "imessage",
-  });
-  return { sent: true, mode: "live", result, state: getState() };
+  working = { ...working, linqChatId: result.chat.id };
+  await setLinqChatId(result.chat.id, working);
+  working = await addLinqActivity(
+    {
+      direction: "outbound",
+      kind,
+      text,
+      status: result.chat.message.delivery_status,
+      messageId: result.chat.message.id,
+      channel: "imessage",
+      effect: options.effect || null,
+    },
+    working,
+  );
+  return { sent: true, mode: "live", result, state: working };
 }
 
-export async function sendLinqMessage(text, kind = "message") {
+export async function sendLinqMessage(text, kind = "message", baseState = null, options = {}) {
   loadEnv();
-  if (isLinqLive()) return sendLinqMessageLive(text, kind);
-  return sendLinqMessageDemo(text, kind);
+  if (isLinqLive()) return sendLinqMessageLive(text, kind, baseState, options);
+  return sendLinqMessageDemo(text, kind, baseState, options);
 }
 
 export function verifyLinqSignature(rawBody, headers) {
@@ -141,65 +162,47 @@ export function verifyLinqSignature(rawBody, headers) {
   return { ok, reason: ok ? null : "Invalid webhook signature", mode: "live" };
 }
 
-export async function handleInboundLinq(payload) {
+export async function handleInboundLinq(payload, baseState = null) {
+  let working = baseState || getState();
   const eventType = payload.event_type || payload.type || payload.event;
   const eventId = payload.id || payload.event_id || payload.data?.id;
   const message = payload.message || payload.data || payload;
   const text = textFromMessageParts(message.parts || message.message?.parts || []);
 
-  if (isLinqLive()) {
-    await addLinqActivity({
+  working = await addLinqActivity(
+    {
       id: eventId || undefined,
       direction: "inbound",
       kind: eventType || "message.received",
       text: text || "(non-text message)",
       status: "received",
       channel: "imessage",
-    });
-  } else {
-    await recordDemoActivity({
-      direction: "inbound",
-      kind: eventType || "message.received",
-      text: text || "(non-text message)",
-      status: "received",
-      messageId: eventId,
-    });
-  }
+    },
+    working,
+  );
 
-  if (!text) return { handled: false, reason: "No text parts", mode: getLinqStatus().mode };
+  if (!text) return { handled: false, reason: "No text parts", mode: getLinqStatus().mode, state: working };
 
-  const lower = text.toLowerCase();
-  if (lower.includes("approve") || lower.includes("deny") || lower.includes(" no ")) {
-    const state = await applyConsentCommand(text);
-    await sendLinqMessage(
-      "PaperTrail updated your consent settings. Locked facts stay out of drafts until you approve them.",
-      "consent-confirmation",
-    );
-    return { handled: true, action: "consent", mode: getLinqStatus().mode, state };
-  }
+  // Two-way loop: a short "checklist" reply to a reminder expands into a richer ask.
+  const normalized = text.trim().toLowerCase();
+  const query = /^(checklist|check list|list|what do i need\??)$/.test(normalized)
+    ? "Give me a short checklist of the documents and steps I need to prepare for my upcoming deadlines and any appeal. Use bullet points."
+    : text;
 
-  const answer = await askPaperTrail(text);
-  await sendLinqMessage(answer.answer.slice(0, 1500), "answer");
-  return { handled: true, action: "answer", mode: getLinqStatus().mode, answer };
+  const answer = await askPaperTrail(query, working);
+  const sent = await sendLinqMessage(answer.answer.slice(0, 1500), "answer", working);
+  return { handled: true, action: "answer", mode: getLinqStatus().mode, answer, state: sent.state || working };
 }
 
-/** Simulates an inbound iMessage (same path as production webhook handler). */
-export async function simulateInboundMessage(text) {
+export async function simulateInboundMessage(text, baseState = null) {
   if (!text?.trim()) throw new Error("Reply text is required.");
-  return handleInboundLinq({
-    id: crypto.randomUUID(),
-    event_type: "message.received",
-    message: { parts: [{ type: "text", value: text.trim() }] },
-  });
+  return handleInboundLinq(
+    {
+      id: crypto.randomUUID(),
+      event_type: "message.received",
+      message: { parts: [{ type: "text", value: text.trim() }] },
+    },
+    baseState,
+  );
 }
 
-export function approvalPrompt() {
-  return `PaperTrail found sensitive facts for your landlord reply.
-
-Approve using:
-1. Address
-2. Rent amount
-3. Personal/medical reason
-
-Reply: approve address rent, deny medical`;
-}

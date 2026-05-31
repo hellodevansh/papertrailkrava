@@ -10,6 +10,8 @@ const routes = {
   "/api/linq/send": () => import("../api/linq/send.js"),
   "/api/linq/reply": () => import("../api/linq/reply.js"),
   "/api/linq/webhook": () => import("../api/linq/webhook.js"),
+  "/api/reminders/preview": () => import("../api/reminders/preview.js"),
+  "/api/reminders/fire": () => import("../api/reminders/fire.js"),
 };
 
 createServer(async (req, res) => {
@@ -40,6 +42,6 @@ createServer(async (req, res) => {
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({ error: "API route failed", details: error.message }));
   }
-}).listen(5174, () => {
-  console.log("PaperTrail API ready on http://localhost:5174");
+}).listen(Number(process.env.PORT) || 5174, () => {
+  console.log(`PaperTrail API ready on http://localhost:${Number(process.env.PORT) || 5174}`);
 });

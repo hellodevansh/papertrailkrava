@@ -24,7 +24,7 @@ export default withStore(async function handler(req, res) {
     }
 
     const { extraction, provider, warning } = await extractDocumentWithKrava(body, reader.text);
-    const { state, persist } = await upsertExtraction(extraction, body);
+    const state = await upsertExtraction(extraction, body, body.state);
     const krava = await savePaperTrailMemories(extraction);
 
     sendJson(res, 200, {
@@ -34,7 +34,6 @@ export default withStore(async function handler(req, res) {
       warning: warning || reader.warning,
       krava,
       state,
-      persist,
     });
   } catch (error) {
     sendError(res, 500, "Document extraction failed.", error.message);
