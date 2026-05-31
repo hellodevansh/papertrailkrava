@@ -296,7 +296,7 @@ function App() {
   const applyState = (next: PaperTrailState) => setState(next);
   const clearSession = () => {
     setState(emptyState); setChat([]); setFiredIds([]);
-    setDemoNow(Date.now()); setError(null); setToast("Session cleared");
+    setDemoNow(Date.now()); setError(null); setToast("Workspace cleared");
   };
 
   const stats = useMemo(() => [
@@ -505,6 +505,15 @@ const NAV: { id: View; label: string; icon: any }[] = [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
+function PrivacyKravaBrand({ className = "" }: { className?: string }) {
+  return (
+    <span className={`ptBrand${className ? ` ${className}` : ""}`}>
+      <ShieldCheck size={12} aria-hidden />
+      Privacy-first · Powered by Krava
+    </span>
+  );
+}
+
 function TopNav({ view, setView, connected, dueCount }: any) {
   const scrollUpload = () => document.getElementById("mk-upload")?.scrollIntoView({ behavior: "smooth", block: "center" });
   return (
@@ -512,7 +521,10 @@ function TopNav({ view, setView, connected, dueCount }: any) {
       <div className="topNavInner">
         <button type="button" className="topBrand" onClick={() => setView("home")}>
           <span className="topBrandMark"><ShieldCheck size={18} /></span>
-          <span>PaperTrail</span>
+          <span className="topBrandText">
+            <span className="topBrandName">PaperTrail</span>
+            <PrivacyKravaBrand className="ptBrandCompact" />
+          </span>
         </button>
         <nav className="topNavLinks" aria-label="Main">
           {NAV.map((item) => (
@@ -545,7 +557,10 @@ function Sidebar({ view, setView, connected, dueCount, hasDocs }: any) {
     <aside className="sidebar">
       <div className="brand">
         <span className="brandMark"><ShieldCheck size={18} /></span>
-        <span className="brandText">PaperTrail</span>
+        <span className="brandText">
+          <span className="brandName">PaperTrail</span>
+          <PrivacyKravaBrand className="ptBrandSidebar" />
+        </span>
       </div>
 
       <nav className="navList">
@@ -567,7 +582,8 @@ function Sidebar({ view, setView, connected, dueCount, hasDocs }: any) {
       </div>
 
       <div className="sideFoot">
-        <span className={connected ? "statusDot ok" : "statusDot"}><i />{connected ? "Krava connected" : "Connecting…"}</span>
+        <PrivacyKravaBrand className="ptBrandFoot" />
+        <span className={connected ? "statusDot ok" : "statusDot"}><i />{connected ? "Krava ready" : "Connecting…"}</span>
       </div>
     </aside>
   );
@@ -692,7 +708,7 @@ function ChatPanel({ chat, busy, question, setQuestion, ask, suggestedQuestions,
             {!hasDocs ? (
               <>
                 <h3>Upload a document to start</h3>
-                <p>Your questions will be answered from whatever you upload — nothing is saved after you close this tab.</p>
+                <p>Ask anything about your uploads. Privacy-first, powered by Krava.</p>
               </>
             ) : (
               <>
@@ -741,7 +757,7 @@ function MarketingHome({
 }: any) {
   const stages = [
     { title: "Upload", desc: "Drop a lease, bill, or letter. Krava structures deadlines, bills, and next steps in seconds.", tags: ["PDF", "Images", "Paste"], cta: "Start upload", action: () => document.getElementById("mk-upload")?.scrollIntoView({ behavior: "smooth" }) },
-    { title: "Ask", desc: "Question your documents in the app or over iMessage — same brain, same answers.", tags: ["Krava Q&A", "Sources cited"], cta: "See inbox demo", action: () => goto("inbox") },
+    { title: "Ask", desc: "Question your documents in the app or over iMessage. Same brain, same answers.", tags: ["Krava Q&A", "Sources cited"], cta: "See inbox demo", action: () => goto("inbox") },
     { title: "Stay ahead", desc: "Linq texts you before due dates. Demo the time machine to fire reminders instantly.", tags: ["iMessage", "Time travel"], cta: "Open reminders", action: () => goto("inbox") },
   ];
 
@@ -750,21 +766,23 @@ function MarketingHome({
       <section className="mkHero">
         <div className="mkWrap mkHeroGrid">
           <div className="mkHeroCopy">
-            <p className="mkEyebrow">Built for founders who ship paperwork</p>
+            <div className="mkHeroBrand">
+              <PrivacyKravaBrand className="ptBrandHero" />
+            </div>
             <h1>
               Life admin at the
               <br />
               <em>speed of clarity.</em>
             </h1>
             <p className="mkLead">
-              No spreadsheets, no guessing — upload once, get deadlines extracted, ask Krava anything, and receive iMessage reminders before it matters.
+              PaperTrail is life admin that meets you in iMessage. Powered by Krava: upload your paperwork, get clear answers, and receive reminders in Messages before deadlines, not after you panic.
             </p>
           </div>
 
           <div id="mk-upload" className="mkQuote">
             <div className="mkQuoteHead">
               <strong>Start in under a minute</strong>
-              <span>Session-only · nothing stored after you close the tab</span>
+              <PrivacyKravaBrand />
             </div>
             <label className="mkDrop">
               <input type="file" accept=".txt,.md,.pdf,image/*" onChange={uploadFile} />
@@ -796,7 +814,7 @@ function MarketingHome({
           <div className="mkSectionHead light">
             <p className="mkEyebrow">The full stack</p>
             <h2>Upload → understand → text before it&apos;s late.</h2>
-            <p>Three surfaces, one session — nothing overlaps, nothing hidden.</p>
+            <p>Privacy-first life admin. Extraction, Q&amp;A, and reminders powered by Krava.</p>
           </div>
           <ProductPanels />
         </div>
@@ -835,10 +853,10 @@ function MarketingHome({
           <div className="mkCompareCol good">
             <h3>PaperTrail</h3>
             <ul>
-              <li>One upload — Krava extracts structure instantly</li>
+              <li>One upload. Krava extracts structure instantly</li>
               <li>Timeline + bills on a single Home view</li>
               <li>Linq reminders with iMessage-native delivery</li>
-              <li>Ask in-app or text — answers cite your documents</li>
+              <li>Ask in-app or text. Answers cite your documents</li>
             </ul>
             <label className="primary mkCompareCta">
               <input type="file" accept=".txt,.md,.pdf,image/*" onChange={uploadFile} />
@@ -851,7 +869,8 @@ function MarketingHome({
       <section className="mkFooterCta">
         <div className="mkWrap mkFooterInner">
           <h2>Ready when your next deadline is.</h2>
-          <p>Upload your documents one at a time — we&apos;ll extract deadlines and keep you ahead.</p>
+          <p>Upload your documents one at a time. Krava keeps you ahead of every deadline.</p>
+          <PrivacyKravaBrand className="ptBrandLight" />
           <label className="mkHeroSecondary light mkFooterUpload">
             <input type="file" accept=".txt,.md,.pdf,image/*" onChange={uploadFile} disabled={Boolean(busy)} />
             <Paperclip size={15} /> Upload a document
@@ -963,7 +982,7 @@ function HomePage(props: any) {
 
 function DocumentsSection({ state, hasDocs, ...uploadProps }: any) {
   return (
-    <Card title="Documents" icon={<FileText size={16} />} actions={<span className="muted">Session only — never stored</span>}>
+    <Card title="Documents" icon={<FileText size={16} />} actions={<PrivacyKravaBrand className="ptBrandCard" />}>
       <div className="docsHub">
         <div className="docsHubUpload">
           <UploadControls {...uploadProps} />
@@ -1051,6 +1070,7 @@ function InboxPage(props: any) {
         <span className="linqTag">Linq · {mode}</span>
         <span className="inboxTopClock"><Clock size={13} /> {clockDate}</span>
         {dueCount > 0 && <span className="inboxDue">{dueCount} ready</span>}
+        <PrivacyKravaBrand className="ptBrandInbox" />
         <div className="inboxTopSpacer" />
         {hasDocs && (
           <button type="button" className="ghost" onClick={sendDigest} disabled={Boolean(busy)}>
@@ -1147,7 +1167,7 @@ function InboxPage(props: any) {
                 <ArrowRight size={16} />
               </button>
             </div>
-            <p className="phoneFoot">From {fromPhone} · Krava replies</p>
+            <p className="phoneFoot"><PrivacyKravaBrand className="ptBrandPhone" /></p>
           </div>
 
           <aside className="inboxSide">
@@ -1181,18 +1201,18 @@ function SettingsPage(props: any) {
   const { status, state, clearSession, busy } = props;
   return (
     <div className="page">
-      <PageHead title="Settings" subtitle="Connections and privacy." />
+      <PageHead title="Settings" subtitle="Privacy-first · Powered by Krava" />
       <div className="twoCol">
-        <Card title="Connections" icon={<Settings size={16} />}>
-          <div className="kv">
-            <div className="kvRow"><span>Krava</span><b className={status?.krava.connected ? "on" : "off"}>{status?.krava.connected ? "Connected" : "Offline"}</b></div>
-            <div className="kvRow"><span>Gemini (file reading)</span><b className={status?.env.gemini ? "on" : "off"}>{status?.env.gemini ? "Enabled" : "Disabled"}</b></div>
-            <div className="kvRow"><span>Linq iMessage</span><b className="on">{status?.linq?.mode === "live" ? "Live" : "Demo"}</b></div>
-          </div>
+        <Card title="PaperTrail" icon={<ShieldCheck size={16} />}>
+          <p className="privacyNote">Your life admin stays private. PaperTrail is privacy-first. Krava reads your documents, answers your questions, and powers every reminder.</p>
+          <PrivacyKravaBrand className="ptBrandSettings" />
+          <button className="ghost danger" onClick={clearSession} disabled={Boolean(busy) || !state.documents.length}><Trash2 size={13} /> Clear workspace</button>
         </Card>
-        <Card title="Privacy" icon={<ShieldCheck size={16} />}>
-          <p className="privacyNote">PaperTrail stores <strong>nothing</strong>. Your documents, extracted details, and reminders live only in this browser session and disappear on refresh. Reminders are computed live — never saved to a database.</p>
-          <button className="ghost danger" onClick={clearSession} disabled={Boolean(busy) || !state.documents.length}><Trash2 size={13} /> Clear session now</button>
+        <Card title="Status" icon={<Settings size={16} />}>
+          <div className="kv">
+            <div className="kvRow"><span>Krava</span><b className={status?.krava.connected ? "on" : "off"}>{status?.krava.connected ? "Ready" : "Offline"}</b></div>
+            <div className="kvRow"><span>iMessage</span><b className="on">{status?.linq?.mode === "live" ? "Live" : "Demo"}</b></div>
+          </div>
         </Card>
       </div>
     </div>

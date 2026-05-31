@@ -179,10 +179,62 @@ input:focus, textarea:focus {
   background: var(--accent);
 }
 .brandText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.brandName {
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: #fafafa;
+}
+
+.ptBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  line-height: 1.2;
+}
+.ptBrand svg { flex-shrink: 0; opacity: 0.9; }
+.ptBrandCompact { font-size: 10px; color: var(--muted); }
+.ptBrandSidebar { color: #a1a1aa; }
+.ptBrandSidebar svg { color: var(--accent); }
+.ptBrandHero {
+  letter-spacing: 0.02em;
+  font-size: 12px;
+}
+.ptBrandLight {
+  justify-content: center;
+  color: #ffb38a;
+  margin-bottom: 20px;
+}
+.ptBrandLight svg { color: #ffb38a; }
+.ptBrandCard { font-size: 10px; }
+.ptBrandPhone {
+  justify-content: center;
+  font-size: 10px;
+  color: var(--muted);
+}
+.ptBrandPhone svg { color: var(--accent); }
+.ptBrandFoot { color: #a1a1aa; margin-bottom: 8px; }
+.ptBrandFoot svg { color: var(--accent); }
+.ptBrandSettings { margin: var(--s-3) 0 var(--s-4); }
+.ptBrandInbox { font-size: 10px; color: var(--muted); }
+.topBrandText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.topBrandName {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .navList { display: flex; flex-direction: column; gap: 2px; }
@@ -248,7 +300,13 @@ input:focus, textarea:focus {
 }
 .sidePromoBtn:hover { background: var(--rail-hover); border-color: #3f3f46; }
 
-.sideFoot { padding: var(--s-3) var(--s-3) 0; }
+.sideFoot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: var(--s-3) var(--s-3) 0;
+}
 .statusDot {
   display: inline-flex;
   align-items: center;
@@ -397,6 +455,9 @@ input:focus, textarea:focus {
   text-transform: uppercase;
   color: var(--accent);
 }
+.mkHeroBrand {
+  margin: 0 0 12px;
+}
 .mkSectionHead { margin-bottom: 40px; max-width: 640px; }
 .mkSectionHead h2 {
   margin: 0;
@@ -439,7 +500,7 @@ input:focus, textarea:focus {
 .mkLead {
   margin: 20px 0 0;
   font-size: 18px;
-  line-height: 1.6;
+  line-height: 1.55;
   color: #5c574f;
   max-width: 520px;
 }
