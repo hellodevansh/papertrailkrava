@@ -110,6 +110,17 @@ function parseDate(value: string): number {
   return Number.isNaN(date.getTime()) ? Number.POSITIVE_INFINITY : date.getTime();
 }
 
+function startOfLocalDay(ms: number) {
+  const d = new Date(ms);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+function isDueOnOrAfterDay(dueDate: string, now: number) {
+  const due = parseDate(dueDate);
+  return Number.isFinite(due) && due >= startOfLocalDay(now);
+}
+
 function urgencyRank(value = "") {
   const v = value.toLowerCase();
   if (v.includes("high") || v.includes("urgent")) return "high";
@@ -174,7 +185,7 @@ function buildClientReminders(state: PaperTrailState, now: number): Reminder[] {
 
 function buildClientDigest(state: PaperTrailState, now: number, limit = 3): string {
   const items = buildClientReminders(state, now)
-    .slice()
+    .filter((r) => isDueOnOrAfterDay(r.dueDate, now))
     .sort((a, b) => parseDate(a.dueDate) - parseDate(b.dueDate))
     .slice(0, limit);
   if (!items.length) return "Good news — you're all caught up. Nothing due right now.";

@@ -8,6 +8,20 @@ function parseDateMs(value) {
   return Number.isNaN(date.getTime()) ? NaN : date.getTime();
 }
 
+/** Start of the local calendar day for demo-clock comparisons. */
+function startOfLocalDayMs(nowMs) {
+  const d = new Date(nowMs);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+/** True when the due date is today or still in the future (not before demo "today"). */
+function isDueOnOrAfterDay(dueDate, nowMs) {
+  const dueMs = parseDateMs(dueDate);
+  if (Number.isNaN(dueMs)) return false;
+  return dueMs >= startOfLocalDayMs(nowMs);
+}
+
 function prettyDate(value) {
   const ms = parseDateMs(value);
   if (Number.isNaN(ms)) return value || "soon";
@@ -100,8 +114,9 @@ export function dueReminders(state, now = Date.now(), firedIds = []) {
 
 /** A single, human "morning brief" summarizing the soonest upcoming items. */
 export function buildDigest(state, now = Date.now(), limit = 3) {
-  const items = buildReminders(state, now)
-    .slice()
+  const nowMs = typeof now === "number" ? now : parseDateMs(now) || Date.now();
+  const items = buildReminders(state, nowMs)
+    .filter((r) => isDueOnOrAfterDay(r.dueDate, nowMs))
     .sort((a, b) => parseDateMs(a.dueDate) - parseDateMs(b.dueDate))
     .slice(0, limit);
   if (!items.length) return "Good news — you're all caught up. Nothing due right now.";

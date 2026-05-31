@@ -100,6 +100,22 @@ test("buildDigest handles an empty state gracefully", () => {
   assert.match(buildDigest(empty, Date.now()), /all caught up/i);
 });
 
+test("buildDigest skips deadlines before the demo day", () => {
+  const state = {
+    deadlines: [
+      { id: "past", title: "Benefits closed", date: "2026-06-01", urgency: "high" },
+      { id: "up1", title: "Utility payment", date: "2026-06-05", urgency: "medium" },
+      { id: "up2", title: "Lease response", date: "2026-06-07", urgency: "medium" },
+    ],
+    payments: [],
+  };
+  const june4 = new Date("2026-06-04T12:00:00").getTime();
+  const digest = buildDigest(state, june4);
+  assert.doesNotMatch(digest, /Benefits closed/);
+  assert.match(digest, /Utility payment/);
+  assert.match(digest, /Lease response/);
+});
+
 test("allCaughtUpText is a friendly closer", () => {
   assert.match(allCaughtUpText(), /caught up/i);
 });
